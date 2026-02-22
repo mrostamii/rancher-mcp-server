@@ -12,7 +12,7 @@ func (t *Toolset) vmListTool() mcp.Tool {
 	return mcp.NewTool(
 		"harvester_vm_list",
 		mcp.WithDescription("List virtual machines across Harvester clusters with status, IP, node, CPU/memory"),
-		mcp.WithString("cluster", mcp.Required(), mcp.Description("Cluster ID (Harvester cluster)")),
+		mcp.WithString("cluster", mcp.Description("Harvester cluster ID (optional if default_harvester_cluster is set in config)")),
 		mcp.WithString("namespace", mcp.Description("Namespace (empty = all namespaces)")),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max items to return (default: 100)")),
@@ -20,9 +20,9 @@ func (t *Toolset) vmListTool() mcp.Tool {
 }
 
 func (t *Toolset) vmListHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	cluster, err := req.RequireString("cluster")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+	cluster := t.cluster(req)
+	if cluster == "" {
+		return mcp.NewToolResultError("cluster is required (or set default_harvester_cluster in config)"), nil
 	}
 	namespace := req.GetString("namespace", "")
 	format := req.GetString("format", "json")

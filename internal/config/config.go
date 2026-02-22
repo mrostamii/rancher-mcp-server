@@ -8,6 +8,9 @@ type Config struct {
 	RancherToken     string `mapstructure:"rancher_token"`
 	TLSInsecure      bool   `mapstructure:"tls_insecure"`
 
+	// Optional: default Harvester cluster ID (e.g. c-tx8rn). Used when a tool call omits cluster.
+	DefaultHarvesterCluster string `mapstructure:"default_harvester_cluster"`
+
 	// Server
 	Port      int    `mapstructure:"port"`
 	LogLevel  int    `mapstructure:"log_level"`

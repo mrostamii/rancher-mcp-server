@@ -12,7 +12,7 @@ func (t *Toolset) vmGetTool() mcp.Tool {
 	return mcp.NewTool(
 		"harvester_vm_get",
 		mcp.WithDescription("Get a single virtual machine with full spec and status (metrics, disks, networks)"),
-		mcp.WithString("cluster", mcp.Required(), mcp.Description("Cluster ID")),
+		mcp.WithString("cluster", mcp.Description("Harvester cluster ID (optional if default_harvester_cluster is set in config)")),
 		mcp.WithString("namespace", mcp.Required(), mcp.Description("Namespace")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("VM name")),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
@@ -20,9 +20,9 @@ func (t *Toolset) vmGetTool() mcp.Tool {
 }
 
 func (t *Toolset) vmGetHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	cluster, err := req.RequireString("cluster")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+	cluster := t.cluster(req)
+	if cluster == "" {
+		return mcp.NewToolResultError("cluster is required (or set default_harvester_cluster in config)"), nil
 	}
 	namespace, err := req.RequireString("namespace")
 	if err != nil {

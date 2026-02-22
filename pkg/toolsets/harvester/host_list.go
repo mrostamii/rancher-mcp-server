@@ -15,16 +15,16 @@ func (t *Toolset) hostListTool() mcp.Tool {
 	return mcp.NewTool(
 		"harvester_host_list",
 		mcp.WithDescription("List Harvester hosts (nodes) with maintenance mode and disk status"),
-		mcp.WithString("cluster", mcp.Required(), mcp.Description("Cluster ID")),
+		mcp.WithString("cluster", mcp.Description("Harvester cluster ID (optional if default_harvester_cluster is set in config)")),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max items (default: 100)")),
 	)
 }
 
 func (t *Toolset) hostListHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	cluster, err := req.RequireString("cluster")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+	cluster := t.cluster(req)
+	if cluster == "" {
+		return mcp.NewToolResultError("cluster is required (or set default_harvester_cluster in config)"), nil
 	}
 	format := req.GetString("format", "json")
 	limit := req.GetInt("limit", 100)
