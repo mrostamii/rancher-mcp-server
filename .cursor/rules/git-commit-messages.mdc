@@ -1,0 +1,55 @@
+---
+description: Use Conventional Commits for all git commit messages
+alwaysApply: true
+---
+
+# Git Commit Messages
+
+Use the **Conventional Commits** specification for every commit message in this project.
+
+## Format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+## Types
+
+- **feat**: New feature (MINOR in SemVer)
+- **fix**: Bug fix (PATCH in SemVer)
+- **BREAKING CHANGE** or **type!**: Breaking API change (MAJOR in SemVer)
+- Other allowed types: `build:`, `chore:`, `ci:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`
+
+## Rules
+
+- Prefix with a type followed by colon and space
+- Scope is optional, in parentheses after type (e.g. `feat(parser):`)
+- Description is a short summary right after the colon
+- Body and footers follow after a blank line
+- For breaking changes: use `BREAKING CHANGE:` in the footer or append `!` after type/scope
+
+## Examples
+
+```
+feat(harvester): add VM list tool
+```
+
+```
+fix(steve): handle pagination for large collections
+```
+
+```
+docs: update API client rules in cursorrules
+```
+
+```
+feat(config)!: require cluster in all tool params
+
+BREAKING CHANGE: cluster is now required for kubernetes_* and harvester_* tools.
+```
+
+When suggesting or editing commit messages, always use this format.

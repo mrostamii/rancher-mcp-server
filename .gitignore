@@ -1,0 +1,106 @@
+# Binaries and build output
+/rancher-mcp-server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/dist
+/build
+/out
+
+# Go
+*.test
+*.out
+go.work
+go.work.sum
+/vendor/
+coverage.txt
+coverage.html
+*.cover
+*.coverprofile
+.cache/
+
+# Go workspace (when using go work)
+go.work
+
+# IDE and editors
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+*.local.yaml
+*.local.yml
+*.local.json
+secrets/
+*.pem
+*.key
+!**/testdata/**/*.key
+!**/testdata/**/*.pem
+
+# Config with sensitive overrides (keep examples only)
+config.local.yaml
+config.local.yml
+config.local.json
+
+# Logs and temp
+*.log
+logs/
+tmp/
+temp/
+/tmp
+/temp
+
+# Debug and profiling
+debug
+__debug_bin*
+*.prof
+*.pprof
+cpu.prof
+mem.prof
+trace.out
+
+# Cursor / MCP
+.cursorrules
+*.cursorignore
+
+# Test and CI artifacts
+.nyc_output/
+test-results/
+junit.xml
+*.tap
+
+# Air / live reload
+.air.toml
+tmp/
+
+# Rancher / kubeconfig (local overrides only)
+kubeconfig*
+!kubeconfig.example
+
+# Misc
+*.bak
+*.orig
+*.rej
+.cache
