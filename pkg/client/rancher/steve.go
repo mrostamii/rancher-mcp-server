@@ -535,7 +535,21 @@ func (c *SteveClient) Action(ctx context.Context, clusterID, resourceType, names
 }
 
 // Create a resource. namespace empty for cluster-scoped.
+// Tries Steve first; on 403 or 404 falls back to native Kubernetes API.
 func (c *SteveClient) Create(ctx context.Context, clusterID, resourceType, namespace string, body interface{}) (*SteveResource, error) {
+	res, err := c.create(ctx, clusterID, resourceType, namespace, body)
+	if err != nil {
+		if strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "404") {
+			if path := steveTypeToK8sAPIPath(resourceType); path != nil {
+				return c.createK8sNativeByPath(ctx, clusterID, path, namespace, body)
+			}
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *SteveClient) create(ctx context.Context, clusterID, resourceType, namespace string, body interface{}) (*SteveResource, error) {
 	var path string
 	if namespace != "" {
 		path = fmt.Sprintf("/k8s/clusters/%s/v1/namespaces/%s/%s", clusterID, namespace, resourceType)
@@ -566,6 +580,56 @@ func (c *SteveClient) Create(ctx context.Context, clusterID, resourceType, names
 		return nil, fmt.Errorf("steve create decode: %w", err)
 	}
 	return &res, nil
+}
+
+// createK8sNativeByPath creates a resource via the native Kubernetes API (POST).
+func (c *SteveClient) createK8sNativeByPath(ctx context.Context, clusterID string, path *k8sAPIPath, namespace string, body interface{}) (*SteveResource, error) {
+	var urlPath string
+	if namespace != "" {
+		urlPath = fmt.Sprintf("/k8s/clusters/%s%s/namespaces/%s/%s", clusterID, path.basePath(), namespace, path.resource)
+	} else {
+		urlPath = fmt.Sprintf("/k8s/clusters/%s%s/%s", clusterID, path.basePath(), path.resource)
+	}
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("k8s create marshal: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+urlPath, bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("k8s create request: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("k8s create %s: %s", resp.Status, string(body))
+	}
+	var item struct {
+		APIVersion string      `json:"apiVersion"`
+		Kind       string      `json:"kind"`
+		Metadata   ObjectMeta  `json:"metadata"`
+		Spec       interface{} `json:"spec,omitempty"`
+		Status     interface{} `json:"status,omitempty"`
+		Data       interface{} `json:"data,omitempty"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&item); err != nil {
+		return nil, fmt.Errorf("k8s create decode: %w", err)
+	}
+	spec := item.Spec
+	if item.Data != nil {
+		spec = item.Data // ConfigMap/Secret use "data" in the native API response
+	}
+	return &SteveResource{
+		TypeMeta:   TypeMeta{Kind: item.Kind, APIVersion: item.APIVersion},
+		ObjectMeta: item.Metadata,
+		Spec:       spec,
+		Status:     item.Status,
+	}, nil
 }
 
 // Update a resource (PUT). namespace empty for cluster-scoped.
