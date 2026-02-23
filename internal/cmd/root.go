@@ -16,7 +16,7 @@ func NewRootCommand() *cobra.Command {
 		Short: "MCP server for Rancher ecosystem (Harvester, Fleet, Kubernetes)",
 		Long:  "Model Context Protocol server providing tools for multi-cluster Kubernetes, Harvester HCI, and Fleet GitOps via Rancher Steve API.",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			if p, _ := cmd.Flags().GetString("config"); p != "" {
+			if p, _ := cmd.PersistentFlags().GetString("config"); p != "" {
 				viper.SetConfigFile(p)
 				if err := viper.ReadInConfig(); err != nil {
 					return err
@@ -41,9 +41,8 @@ func NewRootCommand() *cobra.Command {
 	flags.BoolVar(&cfg.DisableDestructive, "disable-destructive", cfg.DisableDestructive, "Disable delete operations")
 	flags.BoolVar(&cfg.ShowSensitiveData, "show-sensitive-data", cfg.ShowSensitiveData, "Show secret data (default: masked)")
 	flags.StringSliceVar(&cfg.Toolsets, "toolsets", cfg.Toolsets, "Toolsets to enable (currently: harvester)")
-
-	root.Flags().String("config", "", "Config file (TOML or YAML)")
-	_ = viper.BindPFlag("config", root.Flags().Lookup("config"))
+	flags.String("config", "", "Config file (TOML or YAML)")
+	_ = viper.BindPFlag("config", flags.Lookup("config"))
 
 	_ = viper.BindPFlag("rancher_server_url", root.PersistentFlags().Lookup("rancher-server-url"))
 	_ = viper.BindPFlag("rancher_token", root.PersistentFlags().Lookup("rancher-token"))

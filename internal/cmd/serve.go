@@ -8,6 +8,8 @@ import (
 	"github.com/mrostamii/rancher-mcp-server/internal/security"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
 	harvesterToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/harvester"
+	kubernetesToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/kubernetes"
+	rancherToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/rancher"
 )
 
 const version = "0.1.0"
@@ -33,8 +35,13 @@ func runServe(cfg *config.Config) error {
 	steveClient := rancher.NewSteveClient(cfg.RancherServerURL, cfg.RancherToken, cfg.TLSInsecure)
 
 	for _, name := range cfg.Toolsets {
-		if name == "harvester" {
+		switch name {
+		case "harvester":
 			harvesterToolset.NewToolset(steveClient, policy, cfg.DefaultHarvesterCluster).Register(s)
+		case "rancher":
+			rancherToolset.NewToolset(steveClient, policy).Register(s)
+		case "kubernetes":
+			kubernetesToolset.NewToolset(steveClient, policy).Register(s)
 		}
 	}
 
