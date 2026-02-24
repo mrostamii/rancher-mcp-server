@@ -42,6 +42,11 @@ Model Context Protocol (MCP) server for the **Rancher ecosystem**: multi-cluster
    # Edit config.yaml with your Rancher URL and token
    ./rancher-mcp-server --config config.yaml
   ```
+5. **HTTP/SSE transport** (for web clients or remote access)
+  ```bash
+   ./rancher-mcp-server --config config.yaml --transport http --port 8080
+   ```
+   The server exposes the MCP endpoint over HTTP/SSE (e.g. `http://localhost:8080/sse` and message endpoint).
 
 ## Configuration
 
@@ -54,23 +59,29 @@ Model Context Protocol (MCP) server for the **Rancher ecosystem**: multi-cluster
 | `--read-only`                 | `RANCHER_MCP_READ_ONLY`                 | true      | Disable write operations                                                  |
 | `--disable-destructive`       | `RANCHER_MCP_DISABLE_DESTRUCTIVE`       | false     | Disable delete operations                                                 |
 | `--toolsets`                  | `RANCHER_MCP_TOOLSETS`                  | harvester | Toolsets to enable: harvester, rancher, kubernetes                        |
+| `--transport`                 | `RANCHER_MCP_TRANSPORT`                | stdio     | Transport: stdio or http (HTTP/SSE)                                      |
+| `--port`                      | `RANCHER_MCP_PORT`                     | 0         | Port for HTTP/SSE (0 = stdio only)                                        |
 
 
 ## Harvester tools
 
 
-| Tool                     | Description                                   |
-| ------------------------ | --------------------------------------------- |
-| `harvester_vm_list`      | List VMs with status, namespace, spec/status  |
-| `harvester_vm_get`       | Get one VM (full spec and status)             |
-| `harvester_vm_action`    | start, stop, restart, pause, unpause, migrate |
-| `harvester_image_list`   | List VM images (VirtualMachineImage)          |
-| `harvester_volume_list`  | List PVCs (Longhorn-backed volumes)           |
-| `harvester_network_list` | List NetworkAttachmentDefinition (VLANs)      |
-| `harvester_host_list`    | List nodes (Harvester hosts)                  |
+| Tool                      | Description                                                       |
+| ------------------------- | ----------------------------------------------------------------- |
+| `harvester_vm_list`       | List VMs with status, namespace, spec/status                      |
+| `harvester_vm_get`        | Get one VM (full spec and status)                                 |
+| `harvester_vm_action`     | start, stop, restart, pause, unpause, migrate                     |
+| `harvester_vm_create`     | Create VM (when not read-only)                                    |
+| `harvester_vm_snapshot`   | Create/list/restore/delete VM snapshots                            |
+| `harvester_vm_backup`     | Create/list/restore VM backups (Backup Target)                    |
+| `harvester_image_list`    | List VM images (VirtualMachineImage)                              |
+| `harvester_image_create`  | Create VM image from URL (when not read-only)                      |
+| `harvester_volume_list`   | List PVCs (Longhorn-backed volumes)                               |
+| `harvester_volume_create` | Create volume/PVC (optionally from image)                          |
+| `harvester_network_list`  | List NetworkAttachmentDefinition (VLANs)                          |
+| `harvester_host_list`     | List nodes (Harvester hosts)                                      |
 
-
-List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100).
+List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100). Write tools require `read_only: false`.
 
 ## Rancher tools
 

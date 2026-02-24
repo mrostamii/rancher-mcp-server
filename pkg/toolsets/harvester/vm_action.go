@@ -39,9 +39,50 @@ func (t *Toolset) vmActionHandler(ctx context.Context, req mcp.CallToolRequest) 
 		return mcp.NewToolResultError(fmt.Sprintf("invalid action %q; allowed: start, stop, restart, pause, unpause, migrate", action)), nil
 	}
 
-	err = t.client.Action(ctx, cluster, rancher.TypeVirtualMachines, namespace, name, action, nil)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("harvester_vm_action: %v", err)), nil
+	switch action {
+	case "stop":
+		// Patch runStrategy to Halted. Using the Steve ?action=stop on a VM with
+		// runStrategy=RerunOnFailure causes KubeVirt to treat the shutdown as a failure
+		// and immediately restart the VM. Setting Halted is the correct way to stop
+		// and keep the VM off (this is what the Harvester UI does).
+		patch := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"runStrategy": "Halted",
+			},
+		}
+		_, err = t.client.Patch(ctx, cluster, rancher.TypeVirtualMachines, namespace, name, patch)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("harvester_vm_action stop: %v", err)), nil
+		}
+
+	case "start":
+		// Restore the run strategy stored in the Harvester annotation, which records
+		// what the strategy was before the VM was halted. Default to RerunOnFailure.
+		vm, err := t.client.Get(ctx, cluster, rancher.TypeVirtualMachines, namespace, name)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("harvester_vm_action start: %v", err)), nil
+		}
+		runStrategy := "RerunOnFailure"
+		if prev, ok := vm.ObjectMeta.Annotations["harvesterhci.io/vmRunStrategy"]; ok && prev != "" && prev != "Halted" {
+			runStrategy = prev
+		}
+		patch := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"runStrategy": runStrategy,
+			},
+		}
+		_, err = t.client.Patch(ctx, cluster, rancher.TypeVirtualMachines, namespace, name, patch)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("harvester_vm_action start: %v", err)), nil
+		}
+
+	default:
+		// restart, pause, unpause, migrate: use the Steve action endpoint.
+		err = t.client.Action(ctx, cluster, rancher.TypeVirtualMachines, namespace, name, action, nil)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("harvester_vm_action: %v", err)), nil
+		}
 	}
+
 	return mcp.NewToolResultText(fmt.Sprintf("VM %q action %q completed", name, action)), nil
 }
