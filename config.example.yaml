@@ -7,8 +7,8 @@ rancher_token: token-xxxxx:yyyyyyyy
 tls_insecure: false
 
 # Server
-transport: stdio
-port: 0            # 0 = stdio
+transport: stdio   # stdio (default) or http
+port: 0            # 0 = stdio; for transport=http use e.g. 8080
 log_level: 2
 
 # Security (read-only default)

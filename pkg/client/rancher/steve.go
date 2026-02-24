@@ -18,7 +18,11 @@ const (
 	TypeVirtualMachineInstances = "kubevirt.io.virtualmachineinstances"
 	// Harvester CRDs
 	TypeVirtualMachineImages   = "harvesterhci.io.virtualmachineimages"
-	TypePersistentVolumeClaims = "v1.persistentvolumeclaims"
+	TypeVirtualMachineBackups  = "harvesterhci.io.v1beta1.virtualmachinebackups"
+	TypeVirtualMachineRestores = "harvesterhci.io.v1beta1.virtualmachinerestores"
+	// KubeVirt snapshot API (Harvester uses this for in-cluster VM snapshots, not harvesterhci.io)
+	TypeVirtualMachineSnapshots = "snapshot.kubevirt.io.v1beta1.virtualmachinesnapshots"
+	TypePersistentVolumeClaims  = "v1.persistentvolumeclaims"
 	// NetworkAttachmentDefinition for Harvester networks
 	TypeNetworkAttachmentDefinition = "k8s.cni.cncf.io.networkattachmentdefinitions"
 	// Rancher management (use clusterID = "local")
@@ -122,9 +126,24 @@ type k8sAPIPath struct {
 	resource string
 }
 
+// steveTypeToK8sAPIPathMap defines native API paths for Steve types whose dotted form
+// would be parsed incorrectly (e.g. kubevirt.io.virtualmachines -> group kubevirt.io, version v1).
+var steveTypeToK8sAPIPathMap = map[string]*k8sAPIPath{
+	TypeVirtualMachines:             {group: "kubevirt.io", version: "v1", resource: "virtualmachines"},
+	TypeVirtualMachineInstances:     {group: "kubevirt.io", version: "v1", resource: "virtualmachineinstances"},
+	TypeVirtualMachineImages:        {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachineimages"},
+	TypeVirtualMachineSnapshots:     {group: "snapshot.kubevirt.io", version: "v1beta1", resource: "virtualmachinesnapshots"},
+	TypeVirtualMachineBackups:       {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinebackups"},
+	TypeVirtualMachineRestores:      {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinerestores"},
+	TypeNetworkAttachmentDefinition: {group: "k8s.cni.cncf.io", version: "v1", resource: "networkattachmentdefinitions"},
+}
+
 // steveTypeToK8sAPIPath parses a Steve resource type (e.g. "apps.v1.deployments", "core.v1.pods")
 // into native K8s path components. Returns nil if the type cannot be parsed.
 func steveTypeToK8sAPIPath(resourceType string) *k8sAPIPath {
+	if p, ok := steveTypeToK8sAPIPathMap[resourceType]; ok {
+		return p
+	}
 	parts := strings.Split(resourceType, ".")
 	if len(parts) < 2 {
 		return nil
@@ -136,6 +155,16 @@ func steveTypeToK8sAPIPath(resourceType string) *k8sAPIPath {
 		group = ""
 	}
 	return &k8sAPIPath{group: group, version: version, resource: resource}
+}
+
+// steveTypeNativeFirst returns true for resource types that should use the native Kubernetes API
+// first (Steve often does not register these Harvester CRDs, leading to 404).
+func steveTypeNativeFirst(resourceType string) bool {
+	switch resourceType {
+	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores:
+		return true
+	}
+	return false
 }
 
 // basePath returns the path prefix for this API: /api/v1 or /apis/<group>/<version>.
@@ -152,7 +181,8 @@ type k8sListResponse struct {
 }
 
 // List resources in a cluster. For core v1 types we try the native K8s API first, then Steve on 404.
-// For other types (e.g. apps/v1 Deployment) we try Steve first, then native K8s API on 404.
+// For Harvester snapshot/backup/restore types we try native API first (Steve often 404s).
+// For other types we try Steve first, then native K8s API on 404.
 func (c *SteveClient) List(ctx context.Context, clusterID, resourceType string, opts ListOpts) (*SteveCollection, error) {
 	if k8sRes := steveTypeToK8sCore(resourceType); k8sRes != "" {
 		col, err := c.listK8sNative(ctx, clusterID, k8sRes, opts)
@@ -161,6 +191,17 @@ func (c *SteveClient) List(ctx context.Context, clusterID, resourceType string, 
 		}
 		if !strings.Contains(err.Error(), "404") && !strings.Contains(err.Error(), "403") {
 			return nil, err
+		}
+	}
+	if steveTypeNativeFirst(resourceType) {
+		if path := steveTypeToK8sAPIPath(resourceType); path != nil {
+			col, err := c.listK8sNativeByPath(ctx, clusterID, path, opts)
+			if err == nil {
+				return col, nil
+			}
+			if !strings.Contains(err.Error(), "404") && !strings.Contains(err.Error(), "403") {
+				return nil, err
+			}
 		}
 	}
 	col, err := c.list(ctx, clusterID, resourceType, opts)
@@ -514,6 +555,8 @@ func (c *SteveClient) Action(ctx context.Context, clusterID, resourceType, names
 	if body != nil {
 		b, _ := json.Marshal(body)
 		buf = bytes.NewReader(b)
+	} else {
+		buf = bytes.NewReader([]byte("{}"))
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, buf)
 	if err != nil {
@@ -535,8 +578,20 @@ func (c *SteveClient) Action(ctx context.Context, clusterID, resourceType, names
 }
 
 // Create a resource. namespace empty for cluster-scoped.
-// Tries Steve first; on 403 or 404 falls back to native Kubernetes API.
+// For Harvester snapshot/backup/restore types tries native API first (Steve often 404s).
+// Otherwise tries Steve first; on 403 or 404 falls back to native Kubernetes API.
 func (c *SteveClient) Create(ctx context.Context, clusterID, resourceType, namespace string, body interface{}) (*SteveResource, error) {
+	if steveTypeNativeFirst(resourceType) {
+		if path := steveTypeToK8sAPIPath(resourceType); path != nil {
+			res, err := c.createK8sNativeByPath(ctx, clusterID, path, namespace, body)
+			if err == nil {
+				return res, nil
+			}
+			if !strings.Contains(err.Error(), "403") && !strings.Contains(err.Error(), "404") {
+				return nil, err
+			}
+		}
+	}
 	res, err := c.create(ctx, clusterID, resourceType, namespace, body)
 	if err != nil {
 		if strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "404") {
@@ -630,6 +685,40 @@ func (c *SteveClient) createK8sNativeByPath(ctx context.Context, clusterID strin
 		Spec:       spec,
 		Status:     item.Status,
 	}, nil
+}
+
+// Patch applies a JSON merge patch to an existing resource (GET + deep merge + PUT).
+func (c *SteveClient) Patch(ctx context.Context, clusterID, resourceType, namespace, name string, patch map[string]interface{}) (*SteveResource, error) {
+	existing, err := c.Get(ctx, clusterID, resourceType, namespace, name)
+	if err != nil {
+		return nil, fmt.Errorf("patch get: %w", err)
+	}
+	merged := map[string]interface{}{
+		"metadata": existing.ObjectMeta,
+		"spec":     existing.Spec,
+		"status":   existing.Status,
+	}
+	if existing.TypeMeta.Kind != "" {
+		merged["kind"] = existing.TypeMeta.Kind
+	}
+	if existing.TypeMeta.APIVersion != "" {
+		merged["apiVersion"] = existing.TypeMeta.APIVersion
+	}
+	deepMergeMap(merged, patch)
+	return c.Update(ctx, clusterID, resourceType, namespace, name, merged)
+}
+
+// deepMergeMap merges src into dst recursively; map values are merged, all others overwrite.
+func deepMergeMap(dst, src map[string]interface{}) {
+	for k, sv := range src {
+		if sm, ok := sv.(map[string]interface{}); ok {
+			if dm, ok := dst[k].(map[string]interface{}); ok {
+				deepMergeMap(dm, sm)
+				continue
+			}
+		}
+		dst[k] = sv
+	}
 }
 
 // Update a resource (PUT). namespace empty for cluster-scoped.
@@ -726,8 +815,19 @@ func (c *SteveClient) updateK8sNativeByPath(ctx context.Context, clusterID strin
 }
 
 // Delete a resource. namespace empty for cluster-scoped.
-// Tries Steve first; on 404 falls back to native Kubernetes API.
+// For native-first types (e.g. snapshot) tries native API first; otherwise tries Steve first, then native on 404.
 func (c *SteveClient) Delete(ctx context.Context, clusterID, resourceType, namespace, name string) error {
+	if steveTypeNativeFirst(resourceType) {
+		if path := steveTypeToK8sAPIPath(resourceType); path != nil {
+			err := c.deleteK8sNativeByPath(ctx, clusterID, path, namespace, name)
+			if err == nil {
+				return nil
+			}
+			if !strings.Contains(err.Error(), "404") && !strings.Contains(err.Error(), "403") {
+				return err
+			}
+		}
+	}
 	err := c.delete(ctx, clusterID, resourceType, namespace, name)
 	if err != nil && strings.Contains(err.Error(), "404") {
 		if path := steveTypeToK8sAPIPath(resourceType); path != nil {

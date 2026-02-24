@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/mrostamii/rancher-mcp-server/internal/config"
@@ -12,7 +13,7 @@ import (
 	rancherToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/rancher"
 )
 
-const version = "0.1.0"
+const version = "0.3.0"
 
 func runServe(cfg *config.Config) error {
 	if cfg.RancherServerURL == "" || cfg.RancherToken == "" {
@@ -45,5 +46,11 @@ func runServe(cfg *config.Config) error {
 		}
 	}
 
+	if cfg.Transport == "http" && cfg.Port > 0 {
+		addr := fmt.Sprintf(":%d", cfg.Port)
+		log.Printf("Starting HTTP/SSE server on %s", addr)
+		sseServer := server.NewSSEServer(s)
+		return sseServer.Start(addr)
+	}
 	return server.ServeStdio(s)
 }
