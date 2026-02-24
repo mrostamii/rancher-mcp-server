@@ -4,6 +4,7 @@ config.yml
 
 # Binaries and build output
 /rancher-mcp-server
+/npm/bin/
 *.exe
 *.exe~
 *.dll
