@@ -81,6 +81,27 @@ If you prefer to keep the token out of the JSON config:
 }
 ```
 
+### Enable write operations
+
+For VM create, snapshots, backups, image/volume create, and Kubernetes create/patch/delete, add `--read-only=false`:
+
+```json
+{
+  "mcpServers": {
+    "rancher": {
+      "command": "npx",
+      "args": [
+        "-y", "rancher-mcp-server",
+        "--rancher-server-url", "https://rancher.example.com",
+        "--rancher-token", "token-xxxxx:yyyy",
+        "--toolsets", "harvester,rancher,kubernetes",
+        "--read-only=false"
+      ]
+    }
+  }
+}
+```
+
 ### HTTP/SSE transport
 
 For web clients or remote access, add `--transport` and `--port`:
