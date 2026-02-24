@@ -14,7 +14,7 @@ func (t *Toolset) vmActionTool() mcp.Tool {
 	return mcp.NewTool(
 		"harvester_vm_action",
 		mcp.WithDescription("Run lifecycle action on a VM: start, stop, restart, pause, unpause, migrate"),
-		mcp.WithString("cluster", mcp.Description("Harvester cluster ID (optional if default_harvester_cluster is set in config)")),
+		mcp.WithString("cluster", mcp.Required(), mcp.Description("Harvester cluster ID")),
 		mcp.WithString("namespace", mcp.Required(), mcp.Description("Namespace")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("VM name")),
 		mcp.WithString("action", mcp.Required(), mcp.Description("Action: start, stop, restart, pause, unpause, migrate")),
@@ -22,10 +22,7 @@ func (t *Toolset) vmActionTool() mcp.Tool {
 }
 
 func (t *Toolset) vmActionHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	cluster := t.cluster(req)
-	if cluster == "" {
-		return mcp.NewToolResultError("cluster is required (or set default_harvester_cluster in config)"), nil
-	}
+	cluster := req.GetString("cluster", "")
 	namespace, err := req.RequireString("namespace")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

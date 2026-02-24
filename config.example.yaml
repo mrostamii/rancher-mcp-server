@@ -6,9 +6,6 @@ rancher_server_url: https://rancher.example.com
 rancher_token: token-xxxxx:yyyyyyyy
 tls_insecure: false
 
-# Optional: default Harvester cluster ID (e.g. c-tx8rn). Tools use this when cluster is not passed.
-default_harvester_cluster: ""
-
 # Server
 transport: stdio
 port: 0            # 0 = stdio
@@ -19,9 +16,11 @@ read_only: true
 disable_destructive: false
 show_sensitive_data: false
 
-# Toolsets to enable
+# Toolsets to enable (harvester, rancher, kubernetes)
 toolsets:
   - harvester
+  - rancher
+  - kubernetes
 
 # Optional: namespace allow/deny (empty = all allowed except denied)
 # allowed_namespaces: []

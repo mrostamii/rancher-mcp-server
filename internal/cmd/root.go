@@ -16,7 +16,7 @@ func NewRootCommand() *cobra.Command {
 		Short: "MCP server for Rancher ecosystem (Harvester, Fleet, Kubernetes)",
 		Long:  "Model Context Protocol server providing tools for multi-cluster Kubernetes, Harvester HCI, and Fleet GitOps via Rancher Steve API.",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			if p, _ := cmd.Flags().GetString("config"); p != "" {
+			if p, _ := cmd.PersistentFlags().GetString("config"); p != "" {
 				viper.SetConfigFile(p)
 				if err := viper.ReadInConfig(); err != nil {
 					return err
@@ -33,7 +33,6 @@ func NewRootCommand() *cobra.Command {
 	flags.StringVar(&cfg.RancherServerURL, "rancher-server-url", cfg.RancherServerURL, "Rancher server URL")
 	flags.StringVar(&cfg.RancherToken, "rancher-token", cfg.RancherToken, "Rancher bearer token")
 	flags.BoolVar(&cfg.TLSInsecure, "tls-insecure", cfg.TLSInsecure, "Skip TLS verification")
-	flags.StringVar(&cfg.DefaultHarvesterCluster, "default-harvester-cluster", cfg.DefaultHarvesterCluster, "Default Harvester cluster ID (e.g. c-tx8rn); used when tools omit cluster")
 	flags.IntVar(&cfg.Port, "port", cfg.Port, "HTTP port (0 = stdio)")
 	flags.IntVar(&cfg.LogLevel, "log-level", cfg.LogLevel, "Log level 0-9")
 	flags.StringVar(&cfg.Transport, "transport", cfg.Transport, "Transport: stdio or http")
@@ -41,14 +40,12 @@ func NewRootCommand() *cobra.Command {
 	flags.BoolVar(&cfg.DisableDestructive, "disable-destructive", cfg.DisableDestructive, "Disable delete operations")
 	flags.BoolVar(&cfg.ShowSensitiveData, "show-sensitive-data", cfg.ShowSensitiveData, "Show secret data (default: masked)")
 	flags.StringSliceVar(&cfg.Toolsets, "toolsets", cfg.Toolsets, "Toolsets to enable (currently: harvester)")
-
-	root.Flags().String("config", "", "Config file (TOML or YAML)")
-	_ = viper.BindPFlag("config", root.Flags().Lookup("config"))
+	flags.String("config", "", "Config file (TOML or YAML)")
+	_ = viper.BindPFlag("config", flags.Lookup("config"))
 
 	_ = viper.BindPFlag("rancher_server_url", root.PersistentFlags().Lookup("rancher-server-url"))
 	_ = viper.BindPFlag("rancher_token", root.PersistentFlags().Lookup("rancher-token"))
 	_ = viper.BindPFlag("tls_insecure", root.PersistentFlags().Lookup("tls-insecure"))
-	_ = viper.BindPFlag("default_harvester_cluster", root.PersistentFlags().Lookup("default-harvester-cluster"))
 	_ = viper.BindPFlag("port", root.PersistentFlags().Lookup("port"))
 	_ = viper.BindPFlag("log_level", root.PersistentFlags().Lookup("log-level"))
 	_ = viper.BindPFlag("transport", root.PersistentFlags().Lookup("transport"))
