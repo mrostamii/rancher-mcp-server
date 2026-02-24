@@ -37,7 +37,7 @@ func runServe(cfg *config.Config) error {
 	for _, name := range cfg.Toolsets {
 		switch name {
 		case "harvester":
-			harvesterToolset.NewToolset(steveClient, policy, cfg.DefaultHarvesterCluster).Register(s)
+			harvesterToolset.NewToolset(steveClient, policy).Register(s)
 		case "rancher":
 			rancherToolset.NewToolset(steveClient, policy).Register(s)
 		case "kubernetes":

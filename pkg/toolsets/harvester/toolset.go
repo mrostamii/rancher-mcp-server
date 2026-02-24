@@ -1,37 +1,25 @@
 package harvester
 
 import (
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/mrostamii/rancher-mcp-server/internal/security"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
 	"github.com/mrostamii/rancher-mcp-server/pkg/formatter"
 )
 
-// cluster returns the cluster ID from the request, or the default if empty.
-func (t *Toolset) cluster(req mcp.CallToolRequest) string {
-	c := req.GetString("cluster", "")
-	if c != "" {
-		return c
-	}
-	return t.defaultCluster
-}
-
 // Toolset implements the Harvester MCP toolset (VMs, images, volumes, networks, hosts).
 type Toolset struct {
-	client             *rancher.SteveClient
-	policy             *security.Policy
-	formatter          formatter.Formatter
-	defaultCluster     string // optional; used when cluster param is empty
+	client    *rancher.SteveClient
+	policy    *security.Policy
+	formatter formatter.Formatter
 }
 
-// NewToolset creates a Harvester toolset. defaultCluster is optional (e.g. from config); used when a tool omits cluster.
-func NewToolset(client *rancher.SteveClient, policy *security.Policy, defaultCluster string) *Toolset {
+// NewToolset creates a Harvester toolset.
+func NewToolset(client *rancher.SteveClient, policy *security.Policy) *Toolset {
 	return &Toolset{
-		client:         client,
-		policy:         policy,
-		formatter:      formatter.JSONFormatter{},
-		defaultCluster: defaultCluster,
+		client:    client,
+		policy:    policy,
+		formatter: formatter.JSONFormatter{},
 	}
 }
 

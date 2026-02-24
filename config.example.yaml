@@ -6,9 +6,6 @@ rancher_server_url: https://rancher.example.com
 rancher_token: token-xxxxx:yyyyyyyy
 tls_insecure: false
 
-# Optional: default Harvester cluster ID (e.g. c-tx8rn). Tools use this when cluster is not passed.
-default_harvester_cluster: ""
-
 # Server
 transport: stdio
 port: 0            # 0 = stdio

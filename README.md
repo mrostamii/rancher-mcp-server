@@ -51,7 +51,6 @@ Model Context Protocol (MCP) server for the **Rancher ecosystem**: multi-cluster
 | `--rancher-server-url`        | `RANCHER_MCP_RANCHER_SERVER_URL`        | —         | Rancher server URL (required)                                             |
 | `--rancher-token`             | `RANCHER_MCP_RANCHER_TOKEN`             | —         | Bearer token (required)                                                   |
 | `--tls-insecure`              | `RANCHER_MCP_TLS_INSECURE`              | false     | Skip TLS verification                                                     |
-| `--default-harvester-cluster` | `RANCHER_MCP_DEFAULT_HARVESTER_CLUSTER` | —         | Default Harvester cluster ID (e.g. c-tx8rn); used when tools omit cluster |
 | `--read-only`                 | `RANCHER_MCP_READ_ONLY`                 | true      | Disable write operations                                                  |
 | `--disable-destructive`       | `RANCHER_MCP_DISABLE_DESTRUCTIVE`       | false     | Disable delete operations                                                 |
 | `--toolsets`                  | `RANCHER_MCP_TOOLSETS`                  | harvester | Toolsets to enable: harvester, rancher, kubernetes                        |
@@ -71,7 +70,7 @@ Model Context Protocol (MCP) server for the **Rancher ecosystem**: multi-cluster
 | `harvester_host_list`    | List nodes (Harvester hosts)                  |
 
 
-List tools accept `cluster` (optional if `default_harvester_cluster` is set in config), `namespace`, `format` (json|table), `limit` (default 100).
+List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100).
 
 ## Rancher tools
 
@@ -116,16 +115,11 @@ All tools take `cluster` (Rancher cluster ID). List/get support `namespace`, `fo
 
 ### Find your Harvester cluster ID
 
-MCP tools need the **cluster ID** of the Harvester cluster (e.g. `c-tx8rn`).
+Harvester tools require the **cluster ID** (e.g. `c-tx8rn`) on each call.
 
 - **From Rancher UI:** Go to Cluster Management → open your Harvester cluster. The URL contains the cluster ID: `.../c/<cluster-id>/...`.
 - **From API:** `curl -s -H "Authorization: Bearer YOUR_TOKEN" "https://YOUR_RANCHER_URL/v1/management.cattle.io.clusters" | jq '.data[] | {name: .metadata.name}'`
 
-Set it in config as `default_harvester_cluster` so you don’t have to pass it on every request:
-
-```yaml
-default_harvester_cluster: "c-tx8rn"
-```
 
 ---
 
@@ -141,9 +135,6 @@ Edit `config.yaml`:
 rancher_server_url: https://YOUR_RANCHER_URL    # no trailing slash
 rancher_token: token-xxxxx:yyyy                 # your API token
 tls_insecure: false                             # set true only for self-signed certs
-
-# Optional: default Harvester cluster (e.g. c-tx8rn). Tools use this when cluster is not passed.
-default_harvester_cluster: "c-tx8rn"
 
 transport: stdio
 port: 0
@@ -182,7 +173,7 @@ Cursor reads `**.cursor/mcp.json**` in the project (or `~/.cursor/mcp.json` glob
   ```
 3. **Restart Cursor** so it reloads MCP servers. Check **Settings** → **Tools & MCP** that **rancher** is enabled.
 
-Then in a new chat you can ask e.g. “List Harvester VMs” or “List VM images”; the server uses your default cluster from config if you don’t pass one.
+Then in a new chat you can ask e.g. “List Harvester VMs” or “List VM images”; pass the Harvester cluster ID (e.g. `c-tx8rn`) when calling tools.
 
 ### Alternative: env in MCP config
 
@@ -210,7 +201,7 @@ Then in a new chat you can ask e.g. “List Harvester VMs” or “List VM image
 | “rancher-server-url and rancher-token are required” | Config path in `args`, or env vars `RANCHER_MCP_RANCHER_SERVER_URL` and `RANCHER_MCP_RANCHER_TOKEN`. |
 | 401 Unauthorized                                    | Token expired or invalid. Create a new API key in Rancher.                                           |
 | TLS / certificate errors                            | For self-signed Rancher, set `tls_insecure: true` in config (dev only).                              |
-| “cluster not found” or empty lists                  | Wrong cluster ID. Get it from Rancher UI URL or API; set `default_harvester_cluster` in config.      |
+| “cluster not found” or empty lists                  | Wrong cluster ID. Get it from Rancher UI URL or API; pass it as `cluster` to Harvester/Kubernetes tools. |
 | Cursor doesn’t show tools                           | Restart Cursor after editing `mcp.json`; check **Tools & MCP** that the server is enabled.           |
 | Binary not found                                    | Use **absolute** paths in `mcp.json` for `command` and in `args` for `--config`.                     |
 
