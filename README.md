@@ -4,7 +4,7 @@ Model Context Protocol (MCP) server for the **Rancher ecosystem**: multi-cluster
 
 ## Features
 
-- **Harvester toolset**: List/get VMs, images, volumes, networks, hosts; VM actions (start/stop/restart/pause/unpause/migrate)
+- **Harvester toolset**: List/get VMs, images, volumes, networks, hosts; VM actions; addon list/switch (enable/disable)
 - **Rancher toolset**: List clusters and projects, cluster get, overview (management API)
 - **Kubernetes toolset**: List/get/create/patch/delete resources by apiVersion/kind; describe (resource + events), events, capacity
 - **Rancher Steve API**: Single token, multi-cluster access; no CLI wrappers
@@ -83,7 +83,7 @@ If you prefer to keep the token out of the JSON config:
 
 ### Enable write operations
 
-For VM create, snapshots, backups, image/volume create, and Kubernetes create/patch/delete, add `--read-only=false`:
+For VM create, snapshots, backups, image/volume create, addon switch, and Kubernetes create/patch/delete, add `--read-only=false`:
 
 ```json
 {
@@ -185,6 +185,8 @@ Then reference the binary directly in your MCP config:
 | `harvester_volume_create` | Create volume/PVC (optionally from image)                          |
 | `harvester_network_list`  | List NetworkAttachmentDefinition (VLANs)                          |
 | `harvester_host_list`     | List nodes (Harvester hosts)                                      |
+| `harvester_addon_list`    | List Harvester addons (enabled/disabled state)                     |
+| `harvester_addon_switch`  | Enable or disable an addon (when not read-only)                   |
 
 List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100). Write tools require `read_only: false`.
 

@@ -20,6 +20,7 @@ const (
 	TypeVirtualMachineImages   = "harvesterhci.io.virtualmachineimages"
 	TypeVirtualMachineBackups  = "harvesterhci.io.v1beta1.virtualmachinebackups"
 	TypeVirtualMachineRestores = "harvesterhci.io.v1beta1.virtualmachinerestores"
+	TypeAddons                 = "harvesterhci.io.v1beta1.addons"
 	// KubeVirt snapshot API (Harvester uses this for in-cluster VM snapshots, not harvesterhci.io)
 	TypeVirtualMachineSnapshots = "snapshot.kubevirt.io.v1beta1.virtualmachinesnapshots"
 	TypePersistentVolumeClaims  = "v1.persistentvolumeclaims"
@@ -135,6 +136,7 @@ var steveTypeToK8sAPIPathMap = map[string]*k8sAPIPath{
 	TypeVirtualMachineSnapshots:     {group: "snapshot.kubevirt.io", version: "v1beta1", resource: "virtualmachinesnapshots"},
 	TypeVirtualMachineBackups:       {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinebackups"},
 	TypeVirtualMachineRestores:      {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinerestores"},
+	TypeAddons:                      {group: "harvesterhci.io", version: "v1beta1", resource: "addons"},
 	TypeNetworkAttachmentDefinition: {group: "k8s.cni.cncf.io", version: "v1", resource: "networkattachmentdefinitions"},
 }
 
@@ -161,7 +163,7 @@ func steveTypeToK8sAPIPath(resourceType string) *k8sAPIPath {
 // first (Steve often does not register these Harvester CRDs, leading to 404).
 func steveTypeNativeFirst(resourceType string) bool {
 	switch resourceType {
-	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores:
+	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores, TypeAddons:
 		return true
 	}
 	return false

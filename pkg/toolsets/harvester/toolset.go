@@ -31,6 +31,7 @@ func (t *Toolset) Register(s *server.MCPServer) {
 	s.AddTool(t.volumeListTool(), t.volumeListHandler)
 	s.AddTool(t.networkListTool(), t.networkListHandler)
 	s.AddTool(t.hostListTool(), t.hostListHandler)
+	s.AddTool(t.addonListTool(), t.addonListHandler)
 	if t.policy.CanWrite() {
 		s.AddTool(t.vmActionTool(), t.vmActionHandler)
 		s.AddTool(t.vmCreateTool(), t.vmCreateHandler)
@@ -38,5 +39,6 @@ func (t *Toolset) Register(s *server.MCPServer) {
 		s.AddTool(t.vmBackupTool(), t.vmBackupHandler)
 		s.AddTool(t.imageCreateTool(), t.imageCreateHandler)
 		s.AddTool(t.volumeCreateTool(), t.volumeCreateHandler)
+		s.AddTool(t.addonSwitchTool(), t.addonSwitchHandler)
 	}
 }
