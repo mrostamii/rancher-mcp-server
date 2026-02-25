@@ -13,7 +13,7 @@ import (
 	rancherToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/rancher"
 )
 
-const version = "0.3.0"
+const version = "0.4.0"
 
 func runServe(cfg *config.Config) error {
 	if cfg.RancherServerURL == "" || cfg.RancherToken == "" {
