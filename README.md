@@ -176,7 +176,7 @@ Then reference the binary directly in your MCP config:
 | `harvester_vm_list`       | List VMs with status, namespace, spec/status                      |
 | `harvester_vm_get`        | Get one VM (full spec and status)                                 |
 | `harvester_vm_action`     | start, stop, restart, pause, unpause, migrate                     |
-| `harvester_vm_create`     | Create VM (when not read-only)                                    |
+| `harvester_vm_create`     | Create VM (when not read-only). Supports network, interface_type (managedtap/bridge/masquerade), subnet for KubeOVN VPC. |
 | `harvester_vm_snapshot`   | Create/list/restore/delete VM snapshots                            |
 | `harvester_vm_backup`     | Create/list/restore VM backups (Backup Target)                    |
 | `harvester_image_list`    | List VM images (VirtualMachineImage)                              |
@@ -200,6 +200,20 @@ Then reference the binary directly in your MCP config:
 | `harvester_vpc_delete`    | Delete a KubeOVN VPC (when destructive allowed)                   |
 
 List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100). Write tools require `read_only: false`.
+
+### Creating a VM on KubeOVN VPC with external internet
+
+Use `harvester_vm_create` with:
+
+1. **network**: Name of the overlay network (NAD) linked to a KubeOVN subnet. Create via `harvester_network_create` (type=kubeovn) then `harvester_subnet_create` with `provider={network}.{namespace}.ovn`, `vpc=<vpc-name>`, and `nat_outgoing=true`.
+2. **interface_type**: `managedtap` (recommended for KubeOVN) or `bridge`. Uses Multus as primary network.
+3. **subnet**: Optional KubeOVN subnet name for `ovn.kubernetes.io/logical_switch` annotation.
+
+Example: VM on network `vswitch1` in namespace `default`, managedTap interface, subnet `vswitch1-subnet`:
+
+```
+harvester_vm_create cluster=<cluster-id> namespace=default name=testvm image=<image> network=vswitch1 interface_type=managedtap subnet=vswitch1-subnet
+```
 
 ## Rancher tools
 
