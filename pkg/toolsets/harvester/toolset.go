@@ -32,6 +32,8 @@ func (t *Toolset) Register(s *server.MCPServer) {
 	s.AddTool(t.networkListTool(), t.networkListHandler)
 	s.AddTool(t.hostListTool(), t.hostListHandler)
 	s.AddTool(t.addonListTool(), t.addonListHandler)
+	s.AddTool(t.vpcListTool(), t.vpcListHandler)
+	s.AddTool(t.subnetListTool(), t.subnetListHandler)
 	if t.policy.CanWrite() {
 		s.AddTool(t.vmActionTool(), t.vmActionHandler)
 		s.AddTool(t.vmCreateTool(), t.vmCreateHandler)
@@ -40,5 +42,16 @@ func (t *Toolset) Register(s *server.MCPServer) {
 		s.AddTool(t.imageCreateTool(), t.imageCreateHandler)
 		s.AddTool(t.volumeCreateTool(), t.volumeCreateHandler)
 		s.AddTool(t.addonSwitchTool(), t.addonSwitchHandler)
+		s.AddTool(t.vpcCreateTool(), t.vpcCreateHandler)
+		s.AddTool(t.vpcUpdateTool(), t.vpcUpdateHandler)
+		s.AddTool(t.networkCreateTool(), t.networkCreateHandler)
+		s.AddTool(t.networkUpdateTool(), t.networkUpdateHandler)
+		s.AddTool(t.subnetCreateTool(), t.subnetCreateHandler)
+		s.AddTool(t.subnetUpdateTool(), t.subnetUpdateHandler)
+	}
+	if t.policy.CanDelete() {
+		s.AddTool(t.vpcDeleteTool(), t.vpcDeleteHandler)
+		s.AddTool(t.networkDeleteTool(), t.networkDeleteHandler)
+		s.AddTool(t.subnetDeleteTool(), t.subnetDeleteHandler)
 	}
 }

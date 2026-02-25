@@ -83,7 +83,7 @@ If you prefer to keep the token out of the JSON config:
 
 ### Enable write operations
 
-For VM create, snapshots, backups, image/volume create, addon switch, and Kubernetes create/patch/delete, add `--read-only=false`:
+For VM create, snapshots, backups, image/volume create, addon switch, VPC create/update/delete, and Kubernetes create/patch/delete, add `--read-only=false`:
 
 ```json
 {
@@ -183,10 +183,21 @@ Then reference the binary directly in your MCP config:
 | `harvester_image_create`  | Create VM image from URL (when not read-only)                      |
 | `harvester_volume_list`   | List PVCs (Longhorn-backed volumes)                               |
 | `harvester_volume_create` | Create volume/PVC (optionally from image)                          |
-| `harvester_network_list`  | List NetworkAttachmentDefinition (VLANs)                          |
+| `harvester_network_list`    | List VM networks (NetworkAttachmentDefinition)                     |
+| `harvester_network_create` | Create VM network - KubeOVN overlay or VLAN (when not read-only)   |
+| `harvester_network_update` | Update VM network config (when not read-only)                       |
+| `harvester_network_delete` | Delete VM network (when destructive allowed)                       |
+| `harvester_subnet_list`    | List KubeOVN Subnets (requires kubeovn-operator)                   |
+| `harvester_subnet_create`  | Create Subnet in VPC for VM network (when not read-only)           |
+| `harvester_subnet_update`  | Update Subnet namespaces/NAT (when not read-only)                   |
+| `harvester_subnet_delete`  | Delete Subnet (when destructive allowed)                           |
 | `harvester_host_list`     | List nodes (Harvester hosts)                                      |
 | `harvester_addon_list`    | List Harvester addons (enabled/disabled state)                     |
 | `harvester_addon_switch`  | Enable or disable an addon (when not read-only)                   |
+| `harvester_vpc_list`      | List KubeOVN VPCs (requires kubeovn-operator addon)               |
+| `harvester_vpc_create`    | Create a KubeOVN VPC (when not read-only)                        |
+| `harvester_vpc_update`    | Update a KubeOVN VPC namespaces (when not read-only)               |
+| `harvester_vpc_delete`    | Delete a KubeOVN VPC (when destructive allowed)                   |
 
 List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100). Write tools require `read_only: false`.
 
