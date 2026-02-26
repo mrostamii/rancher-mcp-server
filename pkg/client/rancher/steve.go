@@ -20,6 +20,10 @@ const (
 	TypeVirtualMachineImages   = "harvesterhci.io.virtualmachineimages"
 	TypeVirtualMachineBackups  = "harvesterhci.io.v1beta1.virtualmachinebackups"
 	TypeVirtualMachineRestores = "harvesterhci.io.v1beta1.virtualmachinerestores"
+	TypeAddons                 = "harvesterhci.io.v1beta1.addons"
+	// KubeOVN CRDs (when kubeovn-operator addon is enabled)
+	TypeVpcs   = "kubeovn.io.v1.vpcs"
+	TypeSubnets = "kubeovn.io.v1.subnets"
 	// KubeVirt snapshot API (Harvester uses this for in-cluster VM snapshots, not harvesterhci.io)
 	TypeVirtualMachineSnapshots = "snapshot.kubevirt.io.v1beta1.virtualmachinesnapshots"
 	TypePersistentVolumeClaims  = "v1.persistentvolumeclaims"
@@ -135,7 +139,10 @@ var steveTypeToK8sAPIPathMap = map[string]*k8sAPIPath{
 	TypeVirtualMachineSnapshots:     {group: "snapshot.kubevirt.io", version: "v1beta1", resource: "virtualmachinesnapshots"},
 	TypeVirtualMachineBackups:       {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinebackups"},
 	TypeVirtualMachineRestores:      {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinerestores"},
-	TypeNetworkAttachmentDefinition: {group: "k8s.cni.cncf.io", version: "v1", resource: "networkattachmentdefinitions"},
+	TypeAddons:                      {group: "harvesterhci.io", version: "v1beta1", resource: "addons"},
+	TypeVpcs:                        {group: "kubeovn.io", version: "v1", resource: "vpcs"},
+	TypeSubnets:                     {group: "kubeovn.io", version: "v1", resource: "subnets"},
+	TypeNetworkAttachmentDefinition: {group: "k8s.cni.cncf.io", version: "v1", resource: "network-attachment-definitions"},
 }
 
 // steveTypeToK8sAPIPath parses a Steve resource type (e.g. "apps.v1.deployments", "core.v1.pods")
@@ -161,7 +168,7 @@ func steveTypeToK8sAPIPath(resourceType string) *k8sAPIPath {
 // first (Steve often does not register these Harvester CRDs, leading to 404).
 func steveTypeNativeFirst(resourceType string) bool {
 	switch resourceType {
-	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores:
+	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores, TypeAddons, TypeVpcs, TypeSubnets:
 		return true
 	}
 	return false

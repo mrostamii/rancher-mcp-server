@@ -16,7 +16,25 @@ npx rancher-mcp-server --rancher-server-url https://rancher.example.com --ranche
 
 ## Usage with Cursor / Claude Desktop
 
-Add to your `.cursor/mcp.json` (or Claude Desktop config):
+Add to `.cursor/mcp.json` (or Claude Desktop config):
+
+```json
+{
+  "mcpServers": {
+    "rancher": {
+      "command": "npx",
+      "args": [
+        "-y", "rancher-mcp-server",
+        "--rancher-server-url", "https://rancher.example.com",
+        "--rancher-token", "token-xxxxx:yyyy",
+        "--toolsets", "harvester,rancher,kubernetes"
+      ]
+    }
+  }
+}
+```
+
+If you prefer env vars:
 
 ```json
 {
@@ -26,8 +44,28 @@ Add to your `.cursor/mcp.json` (or Claude Desktop config):
       "args": ["-y", "rancher-mcp-server"],
       "env": {
         "RANCHER_MCP_RANCHER_SERVER_URL": "https://rancher.example.com",
-        "RANCHER_MCP_RANCHER_TOKEN": "token-xxxxx:yyyy"
+        "RANCHER_MCP_RANCHER_TOKEN": "token-xxxxx:yyyy",
+        "RANCHER_MCP_TOOLSETS": "harvester,rancher,kubernetes"
       }
+    }
+  }
+}
+```
+
+Enable write operations when needed:
+
+```json
+{
+  "mcpServers": {
+    "rancher": {
+      "command": "npx",
+      "args": [
+        "-y", "rancher-mcp-server",
+        "--rancher-server-url", "https://rancher.example.com",
+        "--rancher-token", "token-xxxxx:yyyy",
+        "--toolsets", "harvester,rancher,kubernetes",
+        "--read-only=false"
+      ]
     }
   }
 }
@@ -35,10 +73,10 @@ Add to your `.cursor/mcp.json` (or Claude Desktop config):
 
 ## Features
 
-- **Harvester toolset**: List/get VMs, images, volumes, networks, hosts; VM actions (start/stop/restart/pause/unpause/migrate); VM create, snapshots, backups
-- **Rancher toolset**: List clusters and projects, cluster get, overview
-- **Kubernetes toolset**: List/get/create/patch/delete resources by apiVersion/kind; describe, events, capacity
-- **Security**: Read-only default, disable-destructive, sensitive data masking
+- **Harvester toolset**: VMs, snapshots, backups, images, volumes, networks, subnets, VPCs, hosts, addons
+- **Rancher toolset**: Cluster list/get, project list, overview
+- **Kubernetes toolset**: List/get/create/patch/delete by `apiVersion`/`kind`, plus describe/events/capacity
+- **Security**: Read-only default, optional destructive-op guardrails, sensitive data masking
 
 ## Configuration
 
@@ -50,10 +88,10 @@ Add to your `.cursor/mcp.json` (or Claude Desktop config):
 | `--read-only` | `RANCHER_MCP_READ_ONLY` | true | Disable write operations |
 | `--disable-destructive` | `RANCHER_MCP_DISABLE_DESTRUCTIVE` | false | Disable delete operations |
 | `--toolsets` | `RANCHER_MCP_TOOLSETS` | harvester | Toolsets: harvester, rancher, kubernetes |
-| `--transport` | `RANCHER_MCP_TRANSPORT` | stdio | Transport: stdio or http |
+| `--transport` | `RANCHER_MCP_TRANSPORT` | stdio | Transport: stdio or http (HTTP/SSE) |
 | `--port` | `RANCHER_MCP_PORT` | 0 | Port for HTTP/SSE |
 
-## Supported Platforms
+## Supported platforms
 
 - macOS (Apple Silicon & Intel)
 - Linux (x64 & ARM64)
@@ -66,4 +104,5 @@ Apache-2.0
 ## Links
 
 - [GitHub](https://github.com/mrostamii/rancher-mcp-server)
+- [Documentation](https://github.com/mrostamii/rancher-mcp-server/blob/main/README.md)
 - [Issues](https://github.com/mrostamii/rancher-mcp-server/issues)

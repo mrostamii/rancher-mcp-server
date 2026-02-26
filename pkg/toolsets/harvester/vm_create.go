@@ -11,14 +11,16 @@ import (
 func (t *Toolset) vmCreateTool() mcp.Tool {
 	return mcp.NewTool(
 		"harvester_vm_create",
-		mcp.WithDescription("Create a Harvester VM. Provide name, namespace, CPU, memory, image (VirtualMachineImage name), network (NetworkAttachmentDefinition name), and optional disk size."),
+		mcp.WithDescription("Create a Harvester VM. For KubeOVN VPC with external internet: use network (NAD name), interface_type=managedtap, and ensure the subnet has nat_outgoing=true."),
 		mcp.WithString("cluster", mcp.Required(), mcp.Description("Harvester cluster ID")),
 		mcp.WithString("namespace", mcp.Required(), mcp.Description("Namespace for the VM")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("VM name")),
 		mcp.WithNumber("cpu", mcp.Description("CPU cores (default: 2)")),
 		mcp.WithString("memory", mcp.Description("Memory size e.g. 2Gi, 4096Mi (default: 4Gi)")),
 		mcp.WithString("image", mcp.Required(), mcp.Description("VirtualMachineImage name (use harvester_image_list to list)")),
-		mcp.WithString("network", mcp.Description("Network name (use harvester_network_list to list; default: default")),
+		mcp.WithString("network", mcp.Description("Network name - NAD for KubeOVN overlay (use harvester_network_list; default: default pod network)")),
+		mcp.WithString("interface_type", mcp.Description("Interface: managedtap (KubeOVN, recommended), bridge, or masquerade (default: masquerade for pod, managedtap for custom network)")),
+		mcp.WithString("subnet", mcp.Description("KubeOVN logical_switch (subnet name) for IP assignment; optional, provider from network is used if unset")),
 		mcp.WithNumber("disk_size_gib", mcp.Description("Root disk size in GiB (default: 20)")),
 		mcp.WithString("run_strategy", mcp.Description("RunStrategy: Always, RerunOnFailure, Halted (default: RerunOnFailure)")),
 	)
@@ -49,7 +51,9 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 	if memory == "" {
 		memory = "4Gi"
 	}
-	_ = req.GetString("network", "default") // reserved for future: Harvester network name
+	network := req.GetString("network", "default")
+	interfaceType := req.GetString("interface_type", "")
+	subnet := req.GetString("subnet", "")
 	diskSizeGiB := req.GetInt("disk_size_gib", 20)
 	if diskSizeGiB < 1 {
 		diskSizeGiB = 20
@@ -103,13 +107,43 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 		return mcp.NewToolResultError(fmt.Sprintf("failed to create root disk PVC from image %q: %v", image, err)), nil
 	}
 
-	// Build KubeVirt VirtualMachine spec (Harvester uses same CRD).
+	// Build interface and network based on network type.
+	// For KubeOVN VPC: use multus + managedtap; subnet needs nat_outgoing=true for external internet.
+	useKubeOVN := network != "" && network != "default"
+	if interfaceType == "" {
+		if useKubeOVN {
+			interfaceType = "managedtap"
+		} else {
+			interfaceType = "masquerade"
+		}
+	}
+
+	templateMetadata := map[string]interface{}{
+		"labels": map[string]string{"harvesterhci.io/vmName": name},
+	}
+	if useKubeOVN && (interfaceType == "managedtap" || interfaceType == "bridge") {
+		templateMetadata["annotations"] = map[string]string{
+			"kubevirt.io/allow-pod-bridge-network-live-migration": "true",
+		}
+	}
+	if subnet != "" && useKubeOVN {
+		if ann, ok := templateMetadata["annotations"].(map[string]string); ok {
+			ann["ovn.kubernetes.io/logical_switch"] = subnet
+		} else {
+			templateMetadata["annotations"] = map[string]string{
+				"kubevirt.io/allow-pod-bridge-network-live-migration": "true",
+				"ovn.kubernetes.io/logical_switch":                    subnet,
+			}
+		}
+	}
+
+	iface := buildVMInterface("default", interfaceType)
+	net := buildVMNetwork("default", network, namespace)
+
 	spec := map[string]interface{}{
 		"runStrategy": runStrategy,
 		"template": map[string]interface{}{
-			"metadata": map[string]interface{}{
-				"labels": map[string]string{"harvesterhci.io/vmName": name},
-			},
+			"metadata": templateMetadata,
 			"spec": map[string]interface{}{
 				"domain": map[string]interface{}{
 					"cpu": map[string]interface{}{
@@ -126,13 +160,7 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 								"bootOrder": 1,
 							},
 						},
-						"interfaces": []map[string]interface{}{
-							{
-								"name":       "default",
-								"model":      "virtio",
-								"masquerade": map[string]interface{}{},
-							},
-						},
+						"interfaces": []map[string]interface{}{iface},
 					},
 					"machine": map[string]interface{}{"type": "q35"},
 					"resources": map[string]interface{}{
@@ -154,12 +182,7 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 						},
 					},
 				},
-				"networks": []map[string]interface{}{
-					{
-						"name": "default",
-						"pod":  map[string]interface{}{},
-					},
-				},
+				"networks": []map[string]interface{}{net},
 			},
 		},
 	}
@@ -180,4 +203,39 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf("VM %q created in namespace %q with root disk %q from image %q (%dGi)", name, namespace, pvcName, image, diskSizeGiB)), nil
+}
+
+// buildVMInterface returns the interface spec for the given type.
+func buildVMInterface(name, ifaceType string) map[string]interface{} {
+	out := map[string]interface{}{
+		"name":  name,
+		"model": "virtio",
+	}
+	switch ifaceType {
+	case "managedtap":
+		out["binding"] = map[string]interface{}{"name": "managedtap"}
+	case "bridge":
+		out["bridge"] = map[string]interface{}{}
+	default:
+		out["masquerade"] = map[string]interface{}{}
+	}
+	return out
+}
+
+// buildVMNetwork returns the network spec. For custom networks, uses multus with default=true.
+func buildVMNetwork(name, network, namespace string) map[string]interface{} {
+	if network == "" || network == "default" {
+		return map[string]interface{}{
+			"name": name,
+			"pod":  map[string]interface{}{},
+		}
+	}
+	networkName := fmt.Sprintf("%s/%s", namespace, network)
+	return map[string]interface{}{
+		"name": name,
+		"multus": map[string]interface{}{
+			"default":     true,
+			"networkName": networkName,
+		},
+	}
 }

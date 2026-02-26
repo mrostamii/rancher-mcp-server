@@ -4,7 +4,7 @@ Model Context Protocol (MCP) server for the **Rancher ecosystem**: multi-cluster
 
 ## Features
 
-- **Harvester toolset**: List/get VMs, images, volumes, networks, hosts; VM actions (start/stop/restart/pause/unpause/migrate)
+- **Harvester toolset**: List/get VMs, images, volumes, networks, hosts; VM actions; addon list/switch (enable/disable)
 - **Rancher toolset**: List clusters and projects, cluster get, overview (management API)
 - **Kubernetes toolset**: List/get/create/patch/delete resources by apiVersion/kind; describe (resource + events), events, capacity
 - **Rancher Steve API**: Single token, multi-cluster access; no CLI wrappers
@@ -83,7 +83,7 @@ If you prefer to keep the token out of the JSON config:
 
 ### Enable write operations
 
-For VM create, snapshots, backups, image/volume create, and Kubernetes create/patch/delete, add `--read-only=false`:
+For VM create, snapshots, backups, image/volume create, addon switch, VPC create/update/delete, and Kubernetes create/patch/delete, add `--read-only=false`:
 
 ```json
 {
@@ -176,17 +176,44 @@ Then reference the binary directly in your MCP config:
 | `harvester_vm_list`       | List VMs with status, namespace, spec/status                      |
 | `harvester_vm_get`        | Get one VM (full spec and status)                                 |
 | `harvester_vm_action`     | start, stop, restart, pause, unpause, migrate                     |
-| `harvester_vm_create`     | Create VM (when not read-only)                                    |
+| `harvester_vm_create`     | Create VM (when not read-only). Supports network, interface_type (managedtap/bridge/masquerade), subnet for KubeOVN VPC. |
 | `harvester_vm_snapshot`   | Create/list/restore/delete VM snapshots                            |
 | `harvester_vm_backup`     | Create/list/restore VM backups (Backup Target)                    |
 | `harvester_image_list`    | List VM images (VirtualMachineImage)                              |
 | `harvester_image_create`  | Create VM image from URL (when not read-only)                      |
 | `harvester_volume_list`   | List PVCs (Longhorn-backed volumes)                               |
 | `harvester_volume_create` | Create volume/PVC (optionally from image)                          |
-| `harvester_network_list`  | List NetworkAttachmentDefinition (VLANs)                          |
+| `harvester_network_list`    | List VM networks (NetworkAttachmentDefinition)                     |
+| `harvester_network_create` | Create VM network - KubeOVN overlay or VLAN (when not read-only)   |
+| `harvester_network_update` | Update VM network config (when not read-only)                       |
+| `harvester_network_delete` | Delete VM network (when destructive allowed)                       |
+| `harvester_subnet_list`    | List KubeOVN Subnets (requires kubeovn-operator)                   |
+| `harvester_subnet_create`  | Create Subnet in VPC for VM network (when not read-only)           |
+| `harvester_subnet_update`  | Update Subnet namespaces/NAT (when not read-only)                   |
+| `harvester_subnet_delete`  | Delete Subnet (when destructive allowed)                           |
 | `harvester_host_list`     | List nodes (Harvester hosts)                                      |
+| `harvester_addon_list`    | List Harvester addons (enabled/disabled state)                     |
+| `harvester_addon_switch`  | Enable or disable an addon (when not read-only)                   |
+| `harvester_vpc_list`      | List KubeOVN VPCs (requires kubeovn-operator addon)               |
+| `harvester_vpc_create`    | Create a KubeOVN VPC (when not read-only)                        |
+| `harvester_vpc_update`    | Update a KubeOVN VPC namespaces (when not read-only)               |
+| `harvester_vpc_delete`    | Delete a KubeOVN VPC (when destructive allowed)                   |
 
 List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100). Write tools require `read_only: false`.
+
+### Creating a VM on KubeOVN VPC with external internet
+
+Use `harvester_vm_create` with:
+
+1. **network**: Name of the overlay network (NAD) linked to a KubeOVN subnet. Create via `harvester_network_create` (type=kubeovn) then `harvester_subnet_create` with `provider={network}.{namespace}.ovn`, `vpc=<vpc-name>`, and `nat_outgoing=true`.
+2. **interface_type**: `managedtap` (recommended for KubeOVN) or `bridge`. Uses Multus as primary network.
+3. **subnet**: Optional KubeOVN subnet name for `ovn.kubernetes.io/logical_switch` annotation.
+
+Example: VM on network `vswitch1` in namespace `default`, managedTap interface, subnet `vswitch1-subnet`:
+
+```
+harvester_vm_create cluster=<cluster-id> namespace=default name=testvm image=<image> network=vswitch1 interface_type=managedtap subnet=vswitch1-subnet
+```
 
 ## Rancher tools
 
