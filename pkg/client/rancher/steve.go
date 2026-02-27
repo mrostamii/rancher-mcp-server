@@ -21,6 +21,7 @@ const (
 	TypeVirtualMachineBackups  = "harvesterhci.io.v1beta1.virtualmachinebackups"
 	TypeVirtualMachineRestores = "harvesterhci.io.v1beta1.virtualmachinerestores"
 	TypeAddons                 = "harvesterhci.io.v1beta1.addons"
+	TypeSettings               = "harvesterhci.io.v1beta1.settings"
 	// KubeOVN CRDs (when kubeovn-operator addon is enabled)
 	TypeVpcs   = "kubeovn.io.v1.vpcs"
 	TypeSubnets = "kubeovn.io.v1.subnets"
@@ -140,6 +141,7 @@ var steveTypeToK8sAPIPathMap = map[string]*k8sAPIPath{
 	TypeVirtualMachineBackups:       {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinebackups"},
 	TypeVirtualMachineRestores:      {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinerestores"},
 	TypeAddons:                      {group: "harvesterhci.io", version: "v1beta1", resource: "addons"},
+	TypeSettings:                    {group: "harvesterhci.io", version: "v1beta1", resource: "settings"},
 	TypeVpcs:                        {group: "kubeovn.io", version: "v1", resource: "vpcs"},
 	TypeSubnets:                     {group: "kubeovn.io", version: "v1", resource: "subnets"},
 	TypeNetworkAttachmentDefinition: {group: "k8s.cni.cncf.io", version: "v1", resource: "network-attachment-definitions"},
@@ -168,7 +170,7 @@ func steveTypeToK8sAPIPath(resourceType string) *k8sAPIPath {
 // first (Steve often does not register these Harvester CRDs, leading to 404).
 func steveTypeNativeFirst(resourceType string) bool {
 	switch resourceType {
-	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores, TypeAddons, TypeVpcs, TypeSubnets:
+	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores, TypeAddons, TypeSettings, TypeVpcs, TypeSubnets:
 		return true
 	}
 	return false

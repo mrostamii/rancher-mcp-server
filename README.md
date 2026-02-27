@@ -84,7 +84,7 @@ If you prefer to keep the token out of the JSON config:
 
 ### Enable write operations
 
-For VM create, snapshots, backups, image/volume create, addon switch, VPC create/update/delete, Kubernetes create/patch/delete, and Helm install/upgrade/rollback, add `--read-only=false`:
+For VM create, snapshots, backups, image/volume create, addon switch, host maintenance mode, VPC create/update/delete, Kubernetes create/patch/delete, and Helm install/upgrade/rollback, add `--read-only=false`:
 
 ```json
 {
@@ -193,6 +193,8 @@ Then reference the binary directly in your MCP config:
 | `harvester_subnet_update`  | Update Subnet namespaces/NAT (when not read-only)                   |
 | `harvester_subnet_delete`  | Delete Subnet (when destructive allowed)                           |
 | `harvester_host_list`     | List nodes (Harvester hosts)                                      |
+| `harvester_host_action`  | Enable/disable maintenance mode on a host (cordon/uncordon)        |
+| `harvester_settings`     | List or get Harvester cluster settings (backup-target, etc.)      |
 | `harvester_addon_list`    | List Harvester addons (enabled/disabled state)                     |
 | `harvester_addon_switch`  | Enable or disable an addon (when not read-only)                   |
 | `harvester_vpc_list`      | List KubeOVN VPCs (requires kubeovn-operator addon)               |
