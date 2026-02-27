@@ -283,6 +283,24 @@ Harvester tools require the **cluster ID** (e.g. `c-tx8rn`) on each call.
 
 ---
 
+## Docker (HTTP/SSE only)
+
+For **HTTP/SSE server mode**, use the container image from [GitHub Container Registry](https://github.com/features/packages) (ghcr.io). For Cursor/Claude with stdio, use **npm** (see Quick start).
+
+Run the server in SSE mode and expose the port:
+
+```bash
+docker run -d -p 8080:8080 \
+  -e RANCHER_MCP_RANCHER_SERVER_URL=https://rancher.example.com \
+  -e RANCHER_MCP_RANCHER_TOKEN="token-xxxxx:yyyy" \
+  -e RANCHER_MCP_TRANSPORT=http \
+  -e RANCHER_MCP_PORT=8080 \
+  ghcr.io/mrostamii/rancher-mcp-server:latest
+```
+
+Connect Cursor or Claude Desktop via the SSE URL: `http://localhost:8080/sse`
+---
+
 ## Supported platforms
 
 - macOS (Apple Silicon & Intel)

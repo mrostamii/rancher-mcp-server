@@ -1,0 +1,12 @@
+.git
+.gitignore
+*.md
+!README.md
+Dockerfile
+.dockerignore
+node_modules
+npm
+*.test.go
+.env
+.env.*
+*.log
