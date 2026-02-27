@@ -70,7 +70,14 @@ func (t *Toolset) upgradeHandler(ctx context.Context, req mcp.CallToolRequest) (
 	upgradeAction.ChartPathOptions.Version = version
 
 	settings := cli.New()
-	chartPath, err := upgradeAction.ChartPathOptions.LocateChart(chartRef, settings)
+	if repoURL != "" {
+		if err := prepareHelmSettingsForRepoURL(settings.RepositoryConfig, settings.RepositoryCache); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("prepare helm repo settings: %v", err)), nil
+		}
+	}
+	chartPath, err := locateChartNoPanic(func() (string, error) {
+		return upgradeAction.ChartPathOptions.LocateChart(chartRef, settings)
+	})
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("locate chart: %v", err)), nil
 	}

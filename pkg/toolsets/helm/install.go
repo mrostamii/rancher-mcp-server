@@ -71,7 +71,14 @@ func (t *Toolset) installHandler(ctx context.Context, req mcp.CallToolRequest) (
 	installAction.ChartPathOptions.Version = version
 
 	settings := cli.New()
-	chartPath, err := installAction.ChartPathOptions.LocateChart(chartRef, settings)
+	if repoURL != "" {
+		if err := prepareHelmSettingsForRepoURL(settings.RepositoryConfig, settings.RepositoryCache); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("prepare helm repo settings: %v", err)), nil
+		}
+	}
+	chartPath, err := locateChartNoPanic(func() (string, error) {
+		return installAction.ChartPathOptions.LocateChart(chartRef, settings)
+	})
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("locate chart: %v", err)), nil
 	}
