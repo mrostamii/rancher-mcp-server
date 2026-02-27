@@ -39,7 +39,7 @@ func NewRootCommand() *cobra.Command {
 	flags.BoolVar(&cfg.ReadOnly, "read-only", cfg.ReadOnly, "Disable all write operations")
 	flags.BoolVar(&cfg.DisableDestructive, "disable-destructive", cfg.DisableDestructive, "Disable delete operations")
 	flags.BoolVar(&cfg.ShowSensitiveData, "show-sensitive-data", cfg.ShowSensitiveData, "Show secret data (default: masked)")
-	flags.StringSliceVar(&cfg.Toolsets, "toolsets", cfg.Toolsets, "Toolsets to enable (currently: harvester)")
+	flags.StringSliceVar(&cfg.Toolsets, "toolsets", cfg.Toolsets, "Toolsets to enable: harvester, rancher, kubernetes, helm")
 	flags.String("config", "", "Config file (TOML or YAML)")
 	_ = viper.BindPFlag("config", flags.Lookup("config"))
 

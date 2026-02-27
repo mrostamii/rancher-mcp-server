@@ -21,6 +21,7 @@ const (
 	TypeVirtualMachineBackups  = "harvesterhci.io.v1beta1.virtualmachinebackups"
 	TypeVirtualMachineRestores = "harvesterhci.io.v1beta1.virtualmachinerestores"
 	TypeAddons                 = "harvesterhci.io.v1beta1.addons"
+	TypeSettings               = "harvesterhci.io.v1beta1.settings"
 	// KubeOVN CRDs (when kubeovn-operator addon is enabled)
 	TypeVpcs   = "kubeovn.io.v1.vpcs"
 	TypeSubnets = "kubeovn.io.v1.subnets"
@@ -140,6 +141,7 @@ var steveTypeToK8sAPIPathMap = map[string]*k8sAPIPath{
 	TypeVirtualMachineBackups:       {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinebackups"},
 	TypeVirtualMachineRestores:      {group: "harvesterhci.io", version: "v1beta1", resource: "virtualmachinerestores"},
 	TypeAddons:                      {group: "harvesterhci.io", version: "v1beta1", resource: "addons"},
+	TypeSettings:                    {group: "harvesterhci.io", version: "v1beta1", resource: "settings"},
 	TypeVpcs:                        {group: "kubeovn.io", version: "v1", resource: "vpcs"},
 	TypeSubnets:                     {group: "kubeovn.io", version: "v1", resource: "subnets"},
 	TypeNetworkAttachmentDefinition: {group: "k8s.cni.cncf.io", version: "v1", resource: "network-attachment-definitions"},
@@ -168,7 +170,7 @@ func steveTypeToK8sAPIPath(resourceType string) *k8sAPIPath {
 // first (Steve often does not register these Harvester CRDs, leading to 404).
 func steveTypeNativeFirst(resourceType string) bool {
 	switch resourceType {
-	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores, TypeAddons, TypeVpcs, TypeSubnets:
+	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores, TypeAddons, TypeSettings, TypeVpcs, TypeSubnets:
 		return true
 	}
 	return false
@@ -184,7 +186,10 @@ func (p *k8sAPIPath) basePath() string {
 
 // k8sListResponse is the native Kubernetes list response (e.g. PodList).
 type k8sListResponse struct {
-	Items []json.RawMessage `json:"items"`
+	Items    []json.RawMessage `json:"items"`
+	Metadata struct {
+		Continue string `json:"continue"`
+	} `json:"metadata"`
 }
 
 // List resources in a cluster. For core v1 types we try the native K8s API first, then Steve on 404.
@@ -290,6 +295,9 @@ func (c *SteveClient) listK8sNative(ctx context.Context, clusterID, k8sResource 
 	if opts.Limit > 0 {
 		q.Set("limit", fmt.Sprintf("%d", opts.Limit))
 	}
+	if opts.Continue != "" {
+		q.Set("continue", opts.Continue)
+	}
 	if opts.LabelSelector != "" {
 		q.Set("labelSelector", opts.LabelSelector)
 	}
@@ -339,7 +347,7 @@ func (c *SteveClient) listK8sNative(ctx context.Context, clusterID, k8sResource 
 			Status:     item.Status,
 		})
 	}
-	return &SteveCollection{Data: data}, nil
+	return &SteveCollection{Data: data, Continue: list.Metadata.Continue}, nil
 }
 
 // listK8sNativeByPath lists using the native Kubernetes API path (/apis/<group>/<version>/... or /api/v1/...).
@@ -357,6 +365,9 @@ func (c *SteveClient) listK8sNativeByPath(ctx context.Context, clusterID string,
 	q := u.Query()
 	if opts.Limit > 0 {
 		q.Set("limit", fmt.Sprintf("%d", opts.Limit))
+	}
+	if opts.Continue != "" {
+		q.Set("continue", opts.Continue)
 	}
 	if opts.LabelSelector != "" {
 		q.Set("labelSelector", opts.LabelSelector)
@@ -406,7 +417,7 @@ func (c *SteveClient) listK8sNativeByPath(ctx context.Context, clusterID string,
 			Status:     item.Status,
 		})
 	}
-	return &SteveCollection{Data: data}, nil
+	return &SteveCollection{Data: data, Continue: list.Metadata.Continue}, nil
 }
 
 // getK8sNative gets a single resource via the native Kubernetes API and converts it to SteveResource.

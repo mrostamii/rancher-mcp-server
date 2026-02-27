@@ -7,6 +7,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
+	"github.com/mrostamii/rancher-mcp-server/pkg/formatter"
 )
 
 // Common namespaces where Harvester addons are deployed.
@@ -20,6 +21,7 @@ func (t *Toolset) addonListTool() mcp.Tool {
 		mcp.WithString("namespace", mcp.Description("Namespace (empty = all common addon namespaces: harvester-system, cattle-logging-system, cattle-monitoring-system, kube-system)")),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max items per namespace (default: 100)")),
+		mcp.WithString("continue", mcp.Description("Pagination token from previous response (for next page; only when namespace is specified)")),
 	)
 }
 
@@ -36,10 +38,15 @@ func (t *Toolset) addonListHandler(ctx context.Context, req mcp.CallToolRequest)
 	if namespace != "" {
 		namespaces = []string{namespace}
 	}
+	continueToken := req.GetString("continue", "")
 
 	items := make([]map[string]interface{}, 0)
+	var paginationContinue string
 	for _, ns := range namespaces {
 		opts := rancher.ListOpts{Namespace: ns, Limit: limit}
+		if namespace != "" && continueToken != "" {
+			opts.Continue = continueToken
+		}
 		col, err := t.client.List(ctx, cluster, rancher.TypeAddons, opts)
 		if err != nil {
 			// Skip namespaces that don't exist or have no addons (404/403)
@@ -47,6 +54,9 @@ func (t *Toolset) addonListHandler(ctx context.Context, req mcp.CallToolRequest)
 				continue
 			}
 			return mcp.NewToolResultError(fmt.Sprintf("failed to list addons in %s: %v", ns, err)), nil
+		}
+		if namespace != "" {
+			paginationContinue = col.Continue
 		}
 		for _, r := range col.Data {
 			enabled := false
@@ -75,7 +85,7 @@ func (t *Toolset) addonListHandler(ctx context.Context, req mcp.CallToolRequest)
 		}
 	}
 
-	out, err := t.formatter.Format(items, format)
+	out, err := formatter.FormatListWithContinue(t.formatter, items, paginationContinue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil
 	}

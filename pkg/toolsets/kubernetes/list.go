@@ -6,6 +6,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
+	"github.com/mrostamii/rancher-mcp-server/pkg/formatter"
 )
 
 func (t *Toolset) listTool() mcp.Tool {
@@ -19,6 +20,7 @@ func (t *Toolset) listTool() mcp.Tool {
 		mcp.WithString("label_selector", mcp.Description("Label selector")),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max items (default: 100)")),
+		mcp.WithString("continue", mcp.Description("Pagination token from previous response (for next page)")),
 	)
 }
 
@@ -43,8 +45,9 @@ func (t *Toolset) listHandler(ctx context.Context, req mcp.CallToolRequest) (*mc
 	if limit <= 0 {
 		limit = 100
 	}
+	continueToken := req.GetString("continue", "")
 
-	opts := rancher.ListOpts{Limit: limit, LabelSelector: labelSelector}
+	opts := rancher.ListOpts{Limit: limit, LabelSelector: labelSelector, Continue: continueToken}
 	if namespace != "" {
 		opts.Namespace = namespace
 	}
@@ -62,7 +65,7 @@ func (t *Toolset) listHandler(ctx context.Context, req mcp.CallToolRequest) (*mc
 			"status":    r.Status,
 		})
 	}
-	out, err := t.formatter.Format(items, format)
+	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil
 	}
