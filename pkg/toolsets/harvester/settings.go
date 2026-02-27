@@ -6,6 +6,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
+	"github.com/mrostamii/rancher-mcp-server/pkg/formatter"
 )
 
 func (t *Toolset) settingsTool() mcp.Tool {
@@ -16,6 +17,7 @@ func (t *Toolset) settingsTool() mcp.Tool {
 		mcp.WithString("name", mcp.Description("Setting name (empty = list all)")),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max items when listing (default: 100)")),
+		mcp.WithString("continue", mcp.Description("Pagination token from previous response (for next page; list mode only)")),
 	)
 }
 
@@ -30,6 +32,7 @@ func (t *Toolset) settingsHandler(ctx context.Context, req mcp.CallToolRequest) 
 	if limit <= 0 {
 		limit = 100
 	}
+	continueToken := req.GetString("continue", "")
 
 	if name != "" {
 		// Get single setting (cluster-scoped, empty namespace)
@@ -56,7 +59,7 @@ func (t *Toolset) settingsHandler(ctx context.Context, req mcp.CallToolRequest) 
 	}
 
 	// List all settings
-	opts := rancher.ListOpts{Limit: limit}
+	opts := rancher.ListOpts{Limit: limit, Continue: continueToken}
 	col, err := t.client.List(ctx, cluster, rancher.TypeSettings, opts)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("harvester_settings list: %v", err)), nil
@@ -74,7 +77,7 @@ func (t *Toolset) settingsHandler(ctx context.Context, req mcp.CallToolRequest) 
 			"value": value,
 		})
 	}
-	out, err := t.formatter.Format(items, format)
+	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil
 	}

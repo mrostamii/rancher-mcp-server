@@ -6,6 +6,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
+	"github.com/mrostamii/rancher-mcp-server/pkg/formatter"
 )
 
 func (t *Toolset) subnetListTool() mcp.Tool {
@@ -15,6 +16,7 @@ func (t *Toolset) subnetListTool() mcp.Tool {
 		mcp.WithString("cluster", mcp.Required(), mcp.Description("Harvester cluster ID")),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max items (default: 100)")),
+		mcp.WithString("continue", mcp.Description("Pagination token from previous response (for next page)")),
 	)
 }
 
@@ -25,8 +27,9 @@ func (t *Toolset) subnetListHandler(ctx context.Context, req mcp.CallToolRequest
 	if limit <= 0 {
 		limit = 100
 	}
+	continueToken := req.GetString("continue", "")
 
-	opts := rancher.ListOpts{Limit: limit}
+	opts := rancher.ListOpts{Limit: limit, Continue: continueToken}
 	col, err := t.client.List(ctx, cluster, rancher.TypeSubnets, opts)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to list subnets: %v", err)), nil
@@ -40,7 +43,7 @@ func (t *Toolset) subnetListHandler(ctx context.Context, req mcp.CallToolRequest
 			"status": r.Status,
 		})
 	}
-	out, err := t.formatter.Format(items, format)
+	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil
 	}

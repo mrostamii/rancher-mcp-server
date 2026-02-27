@@ -6,6 +6,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
+	"github.com/mrostamii/rancher-mcp-server/pkg/formatter"
 )
 
 func (t *Toolset) clusterListTool() mcp.Tool {
@@ -14,6 +15,7 @@ func (t *Toolset) clusterListTool() mcp.Tool {
 		mcp.WithDescription("List all Rancher clusters with health, K8s version, provider, node count"),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max items (default: 100)")),
+		mcp.WithString("continue", mcp.Description("Pagination token from previous response (for next page)")),
 	)
 }
 
@@ -23,8 +25,9 @@ func (t *Toolset) clusterListHandler(ctx context.Context, req mcp.CallToolReques
 	if limit <= 0 {
 		limit = 100
 	}
+	continueToken := req.GetString("continue", "")
 
-	opts := rancher.ListOpts{Limit: limit}
+	opts := rancher.ListOpts{Limit: limit, Continue: continueToken}
 	col, err := t.client.List(ctx, localCluster, rancher.TypeManagementClusters, opts)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to list clusters: %v", err)), nil
@@ -38,7 +41,7 @@ func (t *Toolset) clusterListHandler(ctx context.Context, req mcp.CallToolReques
 			"status":   r.Status,
 		})
 	}
-	out, err := t.formatter.Format(items, format)
+	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil
 	}

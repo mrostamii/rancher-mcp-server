@@ -186,7 +186,10 @@ func (p *k8sAPIPath) basePath() string {
 
 // k8sListResponse is the native Kubernetes list response (e.g. PodList).
 type k8sListResponse struct {
-	Items []json.RawMessage `json:"items"`
+	Items    []json.RawMessage `json:"items"`
+	Metadata struct {
+		Continue string `json:"continue"`
+	} `json:"metadata"`
 }
 
 // List resources in a cluster. For core v1 types we try the native K8s API first, then Steve on 404.
@@ -292,6 +295,9 @@ func (c *SteveClient) listK8sNative(ctx context.Context, clusterID, k8sResource 
 	if opts.Limit > 0 {
 		q.Set("limit", fmt.Sprintf("%d", opts.Limit))
 	}
+	if opts.Continue != "" {
+		q.Set("continue", opts.Continue)
+	}
 	if opts.LabelSelector != "" {
 		q.Set("labelSelector", opts.LabelSelector)
 	}
@@ -341,7 +347,7 @@ func (c *SteveClient) listK8sNative(ctx context.Context, clusterID, k8sResource 
 			Status:     item.Status,
 		})
 	}
-	return &SteveCollection{Data: data}, nil
+	return &SteveCollection{Data: data, Continue: list.Metadata.Continue}, nil
 }
 
 // listK8sNativeByPath lists using the native Kubernetes API path (/apis/<group>/<version>/... or /api/v1/...).
@@ -359,6 +365,9 @@ func (c *SteveClient) listK8sNativeByPath(ctx context.Context, clusterID string,
 	q := u.Query()
 	if opts.Limit > 0 {
 		q.Set("limit", fmt.Sprintf("%d", opts.Limit))
+	}
+	if opts.Continue != "" {
+		q.Set("continue", opts.Continue)
 	}
 	if opts.LabelSelector != "" {
 		q.Set("labelSelector", opts.LabelSelector)
@@ -408,7 +417,7 @@ func (c *SteveClient) listK8sNativeByPath(ctx context.Context, clusterID string,
 			Status:     item.Status,
 		})
 	}
-	return &SteveCollection{Data: data}, nil
+	return &SteveCollection{Data: data, Continue: list.Metadata.Continue}, nil
 }
 
 // getK8sNative gets a single resource via the native Kubernetes API and converts it to SteveResource.

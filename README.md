@@ -202,7 +202,7 @@ Then reference the binary directly in your MCP config:
 | `harvester_vpc_update`    | Update a KubeOVN VPC namespaces (when not read-only)               |
 | `harvester_vpc_delete`    | Delete a KubeOVN VPC (when destructive allowed)                   |
 
-List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100). Write tools require `read_only: false`.
+List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100), `continue` (pagination token for next page). Write tools require `read_only: false`.
 
 ### Creating a VM on KubeOVN VPC with external internet
 
@@ -261,7 +261,7 @@ All tools take `cluster` (Rancher cluster ID). Install/upgrade require `chart`, 
 | `kubernetes_delete`   | Delete resource (when destructive allowed)                          |
 
 
-All tools take `cluster` (Rancher cluster ID). List/get support `namespace`, `format` (json|table), `limit`. Create/patch/delete are gated by `read_only` and `disable_destructive`.
+All tools take `cluster` (Rancher cluster ID). List/get support `namespace`, `format` (json|table), `limit`, `continue` (pagination). Create/patch/delete are gated by `read_only` and `disable_destructive`.
 
 ---
 

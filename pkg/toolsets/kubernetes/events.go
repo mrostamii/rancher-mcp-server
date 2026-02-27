@@ -6,6 +6,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
+	"github.com/mrostamii/rancher-mcp-server/pkg/formatter"
 )
 
 func (t *Toolset) eventsTool() mcp.Tool {
@@ -17,6 +18,7 @@ func (t *Toolset) eventsTool() mcp.Tool {
 		mcp.WithString("involved_object_name", mcp.Description("Filter by involvedObject.name")),
 		mcp.WithString("format", mcp.Description("Output format: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max events (default: 50)")),
+		mcp.WithString("continue", mcp.Description("Pagination token from previous response (for next page)")),
 	)
 }
 
@@ -35,8 +37,9 @@ func (t *Toolset) eventsHandler(ctx context.Context, req mcp.CallToolRequest) (*
 	if limit <= 0 {
 		limit = 50
 	}
+	continueToken := req.GetString("continue", "")
 
-	opts := rancher.ListOpts{Namespace: namespace, Limit: limit}
+	opts := rancher.ListOpts{Namespace: namespace, Limit: limit, Continue: continueToken}
 	if involvedName != "" {
 		opts.FieldSelector = fmt.Sprintf("involvedObject.name=%s", involvedName)
 	}
@@ -56,7 +59,7 @@ func (t *Toolset) eventsHandler(ctx context.Context, req mcp.CallToolRequest) (*
 			"involvedObject": getEventInvolvedObject(e),
 		})
 	}
-	out, err := t.formatter.Format(items, format)
+	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil
 	}
