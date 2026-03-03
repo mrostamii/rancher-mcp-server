@@ -13,6 +13,7 @@ on:
       - 'npm/**'
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   ci:
@@ -35,7 +36,7 @@ jobs:
 
   publish:
     needs: ci
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     defaults:
       run:
