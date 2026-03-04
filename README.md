@@ -1,6 +1,14 @@
 # rancher-mcp-server
 
+![rancher-mcp-server banner](assets/banner.png)
+
 Model Context Protocol (MCP) server for the **Rancher ecosystem**: multi-cluster Kubernetes, Harvester HCI (VMs, storage, networks), and Fleet GitOps.
+
+### Demo
+
+A walkthrough of how this MCP server works (example in Cursor).
+
+https://github.com/user-attachments/assets/7d8fb814-e504-47b4-956d-28f43aeea3b8
 
 ## Features
 
