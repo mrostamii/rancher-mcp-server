@@ -2,18 +2,22 @@ name: npm CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'npm/**'
+      - '.github/workflows/npm-ci.yml'
   pull_request:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'npm/**'
+      - '.github/workflows/npm-ci.yml'
   release:
     types: [published]
   workflow_dispatch:
+
+concurrency:
+  group: npm-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
