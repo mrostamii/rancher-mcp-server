@@ -68,6 +68,10 @@ func (t *Toolset) patchHandler(ctx context.Context, req mcp.CallToolRequest) (*m
 	namespace := req.GetString("namespace", "")
 	format := req.GetString("format", "json")
 
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	var patch map[string]interface{}
 	if err := json.Unmarshal([]byte(patchStr), &patch); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("invalid JSON patch: %v", err)), nil

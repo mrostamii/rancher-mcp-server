@@ -46,6 +46,9 @@ func (t *Toolset) createHandler(ctx context.Context, req mcp.CallToolRequest) (*
 			namespace = ns
 		}
 	}
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	resourceType := rancher.SteveType(apiVersion, kind)
 	res, err := t.client.Create(ctx, cluster, resourceType, namespace, body)
 	if err != nil {

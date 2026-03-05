@@ -34,6 +34,10 @@ func (t *Toolset) rollbackHandler(ctx context.Context, req mcp.CallToolRequest) 
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 	namespace := req.GetString("namespace", "default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	revision := req.GetInt("revision", 0)
 	wait := req.GetBool("wait", false)
 	force := req.GetBool("force", false)

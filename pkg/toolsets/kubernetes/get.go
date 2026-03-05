@@ -41,6 +41,9 @@ func (t *Toolset) getHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	namespace := req.GetString("namespace", "")
 	format := req.GetString("format", "json")
 
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	resourceType := rancher.SteveType(apiVersion, kind)
 	res, err := t.client.Get(ctx, cluster, resourceType, namespace, name)
 	if err != nil {

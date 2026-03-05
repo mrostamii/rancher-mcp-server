@@ -39,6 +39,10 @@ func (t *Toolset) deleteHandler(ctx context.Context, req mcp.CallToolRequest) (*
 	}
 	namespace := req.GetString("namespace", "")
 
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	resourceType := rancher.SteveType(apiVersion, kind)
 	if err := t.client.Delete(ctx, cluster, resourceType, namespace, name); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("kubernetes_delete: %v", err)), nil

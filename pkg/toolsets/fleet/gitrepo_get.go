@@ -24,6 +24,10 @@ func (t *Toolset) gitrepoGetHandler(ctx context.Context, req mcp.CallToolRequest
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 	namespace := req.GetString("namespace", "fleet-default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	format := req.GetString("format", "json")
 
 	res, err := t.client.Get(ctx, localCluster, rancher.TypeFleetGitRepos, namespace, name)

@@ -9,8 +9,8 @@ import (
 	"github.com/mrostamii/rancher-mcp-server/internal/security"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
 	fleetToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/fleet"
-	helmToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/helm"
 	harvesterToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/harvester"
+	helmToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/helm"
 	kubernetesToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/kubernetes"
 	rancherToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/rancher"
 )
@@ -33,6 +33,8 @@ func runServe(cfg *config.Config) error {
 		ReadOnly:           cfg.ReadOnly,
 		DisableDestructive: cfg.DisableDestructive,
 		ShowSensitiveData:  cfg.ShowSensitiveData,
+		AllowedNamespaces:  cfg.AllowedNamespaces,
+		DeniedNamespaces:   cfg.DeniedNamespaces,
 	}
 
 	steveClient := rancher.NewSteveClient(cfg.RancherServerURL, cfg.RancherToken, cfg.TLSInsecure)

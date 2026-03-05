@@ -31,6 +31,11 @@ func (t *Toolset) imageListHandler(ctx context.Context, req mcp.CallToolRequest)
 	}
 	continueToken := req.GetString("continue", "")
 
+	if namespace != "" {
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+	}
 	opts := rancher.ListOpts{Limit: limit, Continue: continueToken}
 	if namespace != "" {
 		opts.Namespace = namespace
@@ -48,6 +53,7 @@ func (t *Toolset) imageListHandler(ctx context.Context, req mcp.CallToolRequest)
 			"status":    r.Status,
 		})
 	}
+	items = t.policy.FilterListByNamespace(items)
 	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil

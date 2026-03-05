@@ -38,6 +38,10 @@ func (t *Toolset) gitrepoActionHandler(ctx context.Context, req mcp.CallToolRequ
 	}
 	namespace := req.GetString("namespace", "fleet-default")
 
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	if !gitrepoActions[action] {
 		return mcp.NewToolResultError(fmt.Sprintf("invalid action %q; allowed: pause, unpause, disablePolling, enablePolling, forceUpdate", action)), nil
 	}

@@ -32,6 +32,10 @@ func (t *Toolset) gitrepoCreateHandler(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 	namespace := req.GetString("namespace", "fleet-default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	branch := req.GetString("branch", "main")
 	pathsStr := req.GetString("paths", "")
 	format := req.GetString("format", "json")

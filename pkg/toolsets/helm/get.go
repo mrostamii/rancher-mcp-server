@@ -30,6 +30,10 @@ func (t *Toolset) getHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 	namespace := req.GetString("namespace", "default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	format := req.GetString("format", "json")
 	revision := req.GetInt("revision", 0)
 

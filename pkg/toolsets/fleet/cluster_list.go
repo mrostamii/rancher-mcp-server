@@ -22,6 +22,10 @@ func (t *Toolset) clusterListTool() mcp.Tool {
 
 func (t *Toolset) clusterListHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	namespace := req.GetString("namespace", "fleet-default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	format := req.GetString("format", "json")
 	limit := req.GetInt("limit", 100)
 	if limit <= 0 {

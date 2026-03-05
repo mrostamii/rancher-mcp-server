@@ -43,6 +43,9 @@ func (t *Toolset) vmBackupHandler(ctx context.Context, req mcp.CallToolRequest) 
 		if namespace == "" || vmName == "" {
 			return mcp.NewToolResultError("harvester_vm_backup create requires namespace and vm_name"), nil
 		}
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
 		name := backupName
 		if name == "" {
 			name = "backup-" + vmName
@@ -74,6 +77,11 @@ func (t *Toolset) vmBackupHandler(ctx context.Context, req mcp.CallToolRequest) 
 		return mcp.NewToolResultText(fmt.Sprintf("Backup %q created for VM %q in namespace %q", name, vmName, namespace)), nil
 
 	case "list":
+		if namespace != "" {
+			if err := t.policy.CheckNamespace(namespace); err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+		}
 		opts := rancher.ListOpts{Limit: limit}
 		if namespace != "" {
 			opts.Namespace = namespace
@@ -89,6 +97,7 @@ func (t *Toolset) vmBackupHandler(ctx context.Context, req mcp.CallToolRequest) 
 				"spec": r.Spec, "status": r.Status,
 			})
 		}
+		items = t.policy.FilterListByNamespace(items)
 		out, err := t.formatter.Format(items, format)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil
@@ -101,6 +110,9 @@ func (t *Toolset) vmBackupHandler(ctx context.Context, req mcp.CallToolRequest) 
 		}
 		if namespace == "" || backupName == "" || vmName == "" {
 			return mcp.NewToolResultError("harvester_vm_backup restore requires namespace, backup_name, and vm_name (target VM name)"), nil
+		}
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
 		}
 		restoreName := "restore-" + backupName
 		spec := map[string]interface{}{

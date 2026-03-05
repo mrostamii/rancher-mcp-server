@@ -22,6 +22,10 @@ func (t *Toolset) bundleListTool() mcp.Tool {
 
 func (t *Toolset) bundleListHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	namespace := req.GetString("namespace", "fleet-default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	format := req.GetString("format", "json")
 	limit := req.GetInt("limit", 100)
 	if limit <= 0 {
@@ -44,6 +48,7 @@ func (t *Toolset) bundleListHandler(ctx context.Context, req mcp.CallToolRequest
 			"status":    r.Status,
 		})
 	}
+	items = t.policy.FilterListByNamespace(items)
 	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil

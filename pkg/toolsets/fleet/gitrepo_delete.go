@@ -27,6 +27,10 @@ func (t *Toolset) gitrepoDeleteHandler(ctx context.Context, req mcp.CallToolRequ
 	}
 	namespace := req.GetString("namespace", "fleet-default")
 
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	if err := t.client.Delete(ctx, localCluster, rancher.TypeFleetGitRepos, namespace, name); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("fleet_gitrepo_delete: %v", err)), nil
 	}
