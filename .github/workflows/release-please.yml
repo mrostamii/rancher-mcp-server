@@ -44,13 +44,16 @@ jobs:
           go-version: '1.23'
 
       - name: Build binaries
+        env:
+          VERSION: ${{ needs.release-please.outputs.tag_name }}
+          LDFLAGS: -s -w -X github.com/mrostamii/rancher-mcp-server/internal/cmd.version=${{ needs.release-please.outputs.tag_name }}
         run: |
           mkdir -p dist
-          GOOS=darwin  GOARCH=arm64 go build -o dist/rancher-mcp-server-darwin-arm64 ./cmd/rancher-mcp-server
-          GOOS=darwin  GOARCH=amd64 go build -o dist/rancher-mcp-server-darwin-x64 ./cmd/rancher-mcp-server
-          GOOS=linux   GOARCH=amd64 go build -o dist/rancher-mcp-server-linux-x64 ./cmd/rancher-mcp-server
-          GOOS=linux   GOARCH=arm64 go build -o dist/rancher-mcp-server-linux-arm64 ./cmd/rancher-mcp-server
-          GOOS=windows GOARCH=amd64 go build -o dist/rancher-mcp-server-windows-x64.exe ./cmd/rancher-mcp-server
+          GOOS=darwin  GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o dist/rancher-mcp-server-darwin-arm64 ./cmd/rancher-mcp-server
+          GOOS=darwin  GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/rancher-mcp-server-darwin-x64 ./cmd/rancher-mcp-server
+          GOOS=linux   GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/rancher-mcp-server-linux-x64 ./cmd/rancher-mcp-server
+          GOOS=linux   GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o dist/rancher-mcp-server-linux-arm64 ./cmd/rancher-mcp-server
+          GOOS=windows GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/rancher-mcp-server-windows-x64.exe ./cmd/rancher-mcp-server
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
@@ -118,6 +121,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ needs.release-please.outputs.tag_name }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

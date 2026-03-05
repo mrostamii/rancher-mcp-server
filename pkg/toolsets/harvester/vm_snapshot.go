@@ -42,6 +42,9 @@ func (t *Toolset) vmSnapshotHandler(ctx context.Context, req mcp.CallToolRequest
 		if namespace == "" || vmName == "" {
 			return mcp.NewToolResultError("harvester_vm_snapshot create requires namespace and vm_name"), nil
 		}
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
 		name := snapshotName
 		if name == "" {
 			name = "snapshot-" + vmName
@@ -69,6 +72,11 @@ func (t *Toolset) vmSnapshotHandler(ctx context.Context, req mcp.CallToolRequest
 		return mcp.NewToolResultText(fmt.Sprintf("Snapshot %q created for VM %q in namespace %q", name, vmName, namespace)), nil
 
 	case "list":
+		if namespace != "" {
+			if err := t.policy.CheckNamespace(namespace); err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+		}
 		opts := rancher.ListOpts{Limit: limit}
 		if namespace != "" {
 			opts.Namespace = namespace
@@ -84,6 +92,7 @@ func (t *Toolset) vmSnapshotHandler(ctx context.Context, req mcp.CallToolRequest
 				"spec": r.Spec, "status": r.Status,
 			})
 		}
+		items = t.policy.FilterListByNamespace(items)
 		out, err := t.formatter.Format(items, format)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil
@@ -96,6 +105,9 @@ func (t *Toolset) vmSnapshotHandler(ctx context.Context, req mcp.CallToolRequest
 		}
 		if namespace == "" || snapshotName == "" {
 			return mcp.NewToolResultError("harvester_vm_snapshot restore requires namespace and snapshot_name"), nil
+		}
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
 		}
 		// Create VirtualMachineRestore targeting the snapshot.
 		restoreName := "restore-" + snapshotName
@@ -134,6 +146,9 @@ func (t *Toolset) vmSnapshotHandler(ctx context.Context, req mcp.CallToolRequest
 		}
 		if namespace == "" || snapshotName == "" {
 			return mcp.NewToolResultError("harvester_vm_snapshot delete requires namespace and snapshot_name"), nil
+		}
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
 		}
 		err := t.client.Delete(ctx, cluster, rancher.TypeVirtualMachineSnapshots, namespace, snapshotName)
 		if err != nil {

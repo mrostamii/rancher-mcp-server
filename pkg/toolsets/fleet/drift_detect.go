@@ -22,6 +22,10 @@ func (t *Toolset) driftDetectTool() mcp.Tool {
 
 func (t *Toolset) driftDetectHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	namespace := req.GetString("namespace", "fleet-default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	gitrepoFilter := req.GetString("gitrepo", "")
 	format := req.GetString("format", "json")
 	limit := req.GetInt("limit", 100)

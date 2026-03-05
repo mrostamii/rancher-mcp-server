@@ -40,6 +40,8 @@ func NewRootCommand() *cobra.Command {
 	flags.BoolVar(&cfg.DisableDestructive, "disable-destructive", cfg.DisableDestructive, "Disable delete operations")
 	flags.BoolVar(&cfg.ShowSensitiveData, "show-sensitive-data", cfg.ShowSensitiveData, "Show secret data (default: masked)")
 	flags.StringSliceVar(&cfg.Toolsets, "toolsets", cfg.Toolsets, "Toolsets to enable: harvester, rancher, kubernetes, helm, fleet")
+	flags.StringSliceVar(&cfg.AllowedNamespaces, "allowed-namespaces", cfg.AllowedNamespaces, "Namespaces to allow (empty = all except denied)")
+	flags.StringSliceVar(&cfg.DeniedNamespaces, "denied-namespaces", cfg.DeniedNamespaces, "Namespaces to always deny")
 	flags.String("config", "", "Config file (TOML or YAML)")
 	_ = viper.BindPFlag("config", flags.Lookup("config"))
 
@@ -53,6 +55,8 @@ func NewRootCommand() *cobra.Command {
 	_ = viper.BindPFlag("disable_destructive", root.PersistentFlags().Lookup("disable-destructive"))
 	_ = viper.BindPFlag("show_sensitive_data", root.PersistentFlags().Lookup("show-sensitive-data"))
 	_ = viper.BindPFlag("toolsets", root.PersistentFlags().Lookup("toolsets"))
+	_ = viper.BindPFlag("allowed_namespaces", root.PersistentFlags().Lookup("allowed-namespaces"))
+	_ = viper.BindPFlag("denied_namespaces", root.PersistentFlags().Lookup("denied-namespaces"))
 
 	viper.SetEnvPrefix(envPrefix)
 	viper.AutomaticEnv()

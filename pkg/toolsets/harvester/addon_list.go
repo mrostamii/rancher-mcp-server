@@ -36,6 +36,9 @@ func (t *Toolset) addonListHandler(ctx context.Context, req mcp.CallToolRequest)
 
 	namespaces := addonNamespaces
 	if namespace != "" {
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
 		namespaces = []string{namespace}
 	}
 	continueToken := req.GetString("continue", "")
@@ -43,6 +46,9 @@ func (t *Toolset) addonListHandler(ctx context.Context, req mcp.CallToolRequest)
 	items := make([]map[string]interface{}, 0)
 	var paginationContinue string
 	for _, ns := range namespaces {
+		if err := t.policy.CheckNamespace(ns); err != nil {
+			continue // skip denied namespaces when listing all
+		}
 		opts := rancher.ListOpts{Namespace: ns, Limit: limit}
 		if namespace != "" && continueToken != "" {
 			opts.Continue = continueToken

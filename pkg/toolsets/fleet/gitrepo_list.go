@@ -23,6 +23,10 @@ func (t *Toolset) gitrepoListTool() mcp.Tool {
 func (t *Toolset) gitrepoListHandler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	namespace := req.GetString("namespace", "fleet-default")
 	format := req.GetString("format", "json")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	limit := req.GetInt("limit", 100)
 	if limit <= 0 {
 		limit = 100
@@ -44,6 +48,7 @@ func (t *Toolset) gitrepoListHandler(ctx context.Context, req mcp.CallToolReques
 			"status":    r.Status,
 		})
 	}
+	items = t.policy.FilterListByNamespace(items)
 	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil

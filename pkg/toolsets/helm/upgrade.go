@@ -44,6 +44,10 @@ func (t *Toolset) upgradeHandler(ctx context.Context, req mcp.CallToolRequest) (
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 	namespace := req.GetString("namespace", "default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	repoURL := req.GetString("repo_url", "")
 	version := req.GetString("version", "")
 	valuesStr := req.GetString("values", "{}")

@@ -33,6 +33,9 @@ func (t *Toolset) networkCreateHandler(ctx context.Context, req mcp.CallToolRequ
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	name, err := req.RequireString("name")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

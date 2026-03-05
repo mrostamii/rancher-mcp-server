@@ -33,6 +33,10 @@ func (t *Toolset) uninstallHandler(ctx context.Context, req mcp.CallToolRequest)
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 	namespace := req.GetString("namespace", "default")
+
+	if err := t.policy.CheckNamespace(namespace); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 	keepHistory := req.GetBool("keep_history", false)
 	wait := req.GetBool("wait", false)
 

@@ -30,6 +30,12 @@ func (t *Toolset) listHandler(ctx context.Context, req mcp.CallToolRequest) (*mc
 	namespace := req.GetString("namespace", "")
 	format := req.GetString("format", "json")
 	deployed := req.GetBool("deployed", false)
+
+	if namespace != "" {
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+	}
 	failed := req.GetBool("failed", false)
 	pending := req.GetBool("pending", false)
 
@@ -68,6 +74,7 @@ func (t *Toolset) listHandler(ctx context.Context, req mcp.CallToolRequest) (*mc
 			"app_version": r.Chart.Metadata.AppVersion,
 		})
 	}
+	items = t.policy.FilterListByNamespace(items)
 	out, err := t.formatter.Format(items, format)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("format: %v", err)), nil

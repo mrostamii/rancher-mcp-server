@@ -42,6 +42,12 @@ func (t *Toolset) describeHandler(ctx context.Context, req mcp.CallToolRequest) 
 	namespace := req.GetString("namespace", "")
 	format := req.GetString("format", "json")
 	eventsLimit := req.GetInt("events_limit", 20)
+
+	if namespace != "" {
+		if err := t.policy.CheckNamespace(namespace); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+	}
 	if eventsLimit <= 0 {
 		eventsLimit = 20
 	}

@@ -25,7 +25,7 @@ toolsets:
   - fleet
 
 # Optional: namespace allow/deny (empty = all allowed except denied)
-# allowed_namespaces: []
-denied_namespaces:
+# allowed_namespaces: []   # If set, only these namespaces are accessible
+denied_namespaces:        # Always blocked (default includes system namespaces)
   - kube-system
   - cattle-system
