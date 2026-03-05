@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/mrostamii/rancher-mcp-server/compare/v0.6.0...v0.7.0) (2026-03-05)
+
+
+### Features
+
+* implement namespace policy management ([653e1f0](https://github.com/mrostamii/rancher-mcp-server/commit/653e1f0887151c5df0cf78cf2a158ad2b2ee674e))
+
 ## [0.6.0](https://github.com/mrostamii/rancher-mcp-server/compare/v0.5.0...v0.6.0) (2026-03-05)
 
 
