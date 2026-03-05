@@ -11,8 +11,6 @@ on:
       - 'go.sum'
       - 'Dockerfile'
       - '.github/workflows/docker-publish.yml'
-  release:
-    types: [published]
 
 concurrency:
   group: docker-${{ github.ref }}
@@ -44,9 +42,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.event_name == 'release' }}
-            type=semver,pattern=v{{version}},enable=${{ github.event_name == 'release' }}
-            type=semver,pattern=v{{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest
 
       - name: Build and push
         uses: docker/build-push-action@v6
