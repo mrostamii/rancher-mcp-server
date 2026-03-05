@@ -33,6 +33,11 @@ const (
 	// Rancher management (use clusterID = "local")
 	TypeManagementClusters = "management.cattle.io.clusters"
 	TypeManagementProjects = "management.cattle.io.projects"
+	// Fleet GitOps (use clusterID = "local")
+	TypeFleetGitRepos         = "fleet.cattle.io.v1alpha1.gitrepos"
+	TypeFleetBundles          = "fleet.cattle.io.v1alpha1.bundles"
+	TypeFleetClusters         = "fleet.cattle.io.v1alpha1.clusters"
+	TypeFleetBundleDeployments = "fleet.cattle.io.v1alpha1.bundledeployments"
 	// Core K8s (Rancher Steve uses "core" as the API group name for core/v1 resources)
 	TypeEvents = "core.v1.events"
 	TypeNodes  = "core.v1.nodes"
@@ -145,6 +150,11 @@ var steveTypeToK8sAPIPathMap = map[string]*k8sAPIPath{
 	TypeVpcs:                        {group: "kubeovn.io", version: "v1", resource: "vpcs"},
 	TypeSubnets:                     {group: "kubeovn.io", version: "v1", resource: "subnets"},
 	TypeNetworkAttachmentDefinition: {group: "k8s.cni.cncf.io", version: "v1", resource: "network-attachment-definitions"},
+	// Fleet CRDs (fleet.cattle.io/v1alpha1)
+	TypeFleetGitRepos:         {group: "fleet.cattle.io", version: "v1alpha1", resource: "gitrepos"},
+	TypeFleetBundles:          {group: "fleet.cattle.io", version: "v1alpha1", resource: "bundles"},
+	TypeFleetClusters:         {group: "fleet.cattle.io", version: "v1alpha1", resource: "clusters"},
+	TypeFleetBundleDeployments: {group: "fleet.cattle.io", version: "v1alpha1", resource: "bundledeployments"},
 }
 
 // steveTypeToK8sAPIPath parses a Steve resource type (e.g. "apps.v1.deployments", "core.v1.pods")
@@ -171,6 +181,8 @@ func steveTypeToK8sAPIPath(resourceType string) *k8sAPIPath {
 func steveTypeNativeFirst(resourceType string) bool {
 	switch resourceType {
 	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores, TypeAddons, TypeSettings, TypeVpcs, TypeSubnets:
+		return true
+	case TypeFleetGitRepos, TypeFleetBundles, TypeFleetClusters, TypeFleetBundleDeployments:
 		return true
 	}
 	return false

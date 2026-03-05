@@ -1,5 +1,10 @@
 # rancher-mcp-server
 
+[![GitHub License](https://img.shields.io/github/license/mrostamii/rancher-mcp-server)](https://github.com/mrostamii/rancher-mcp-server/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/rancher-mcp-server)](https://www.npmjs.com/package/rancher-mcp-server)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/mrostamii/rancher-mcp-server?sort=semver)](https://github.com/mrostamii/rancher-mcp-server/releases/latest)
+[![Build](https://github.com/mrostamii/rancher-mcp-server/actions/workflows/npm-ci.yml/badge.svg)](https://github.com/mrostamii/rancher-mcp-server/actions/workflows/npm-ci.yml)
+
 ![rancher-mcp-server banner](assets/banner.png)
 
 Model Context Protocol (MCP) server for the **Rancher ecosystem**: multi-cluster Kubernetes, Harvester HCI (VMs, storage, networks), and Fleet GitOps.
@@ -16,6 +21,7 @@ https://github.com/user-attachments/assets/7d8fb814-e504-47b4-956d-28f43aeea3b8
 - **Rancher toolset**: List clusters and projects, cluster get, overview (management API)
 - **Kubernetes toolset**: List/get/create/patch/delete resources by apiVersion/kind; describe (resource + events), events, capacity
 - **Helm toolset**: List/get/history of releases; install, upgrade, rollback, uninstall; repo list
+- **Fleet toolset**: GitRepo list/get/create; Bundle list; Fleet cluster list; drift detection
 - **Rancher Steve API**: Single token, multi-cluster access; no CLI wrappers
 - **Security**: Read-only default, disable-destructive, sensitive data masking
 - **Config**: Flags, env (`RANCHER_MCP_*`), or file (YAML/TOML)
@@ -41,7 +47,7 @@ Add to `.cursor/mcp.json` (project-level) or `~/.cursor/mcp.json` (global):
         "-y", "rancher-mcp-server",
         "--rancher-server-url", "https://rancher.example.com",
         "--rancher-token", "token-xxxxx:yyyy",
-        "--toolsets", "harvester,rancher,kubernetes"
+        "--toolsets", "harvester,rancher,kubernetes,fleet"
       ]
     }
   }
@@ -63,7 +69,7 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
         "-y", "rancher-mcp-server",
         "--rancher-server-url", "https://rancher.example.com",
         "--rancher-token", "token-xxxxx:yyyy",
-        "--toolsets", "harvester,rancher,kubernetes"
+        "--toolsets", "harvester,rancher,kubernetes,fleet"
       ]
     }
   }
@@ -92,7 +98,7 @@ If you prefer to keep the token out of the JSON config:
 
 ### Enable write operations
 
-For VM create, snapshots, backups, image/volume create, addon switch, host maintenance mode, VPC create/update/delete, Kubernetes create/patch/delete, and Helm install/upgrade/rollback, add `--read-only=false`:
+For VM create, snapshots, backups, image/volume create, addon switch, host maintenance mode, VPC create/update/delete, Kubernetes create/patch/delete, Helm install/upgrade/rollback, and Fleet gitrepo create/delete, add `--read-only=false`. Delete operations also require `--disable-destructive=false` (default).
 
 ```json
 {
@@ -103,7 +109,7 @@ For VM create, snapshots, backups, image/volume create, addon switch, host maint
         "-y", "rancher-mcp-server",
         "--rancher-server-url", "https://rancher.example.com",
         "--rancher-token", "token-xxxxx:yyyy",
-        "--toolsets", "harvester,rancher,kubernetes,helm",
+        "--toolsets", "harvester,rancher,kubernetes,helm,fleet",
         "--read-only=false"
       ]
     }
@@ -152,7 +158,7 @@ Then reference the binary directly in your MCP config:
       "args": [
         "--rancher-server-url", "https://rancher.example.com",
         "--rancher-token", "token-xxxxx:yyyy",
-        "--toolsets", "harvester,rancher,kubernetes"
+        "--toolsets", "harvester,rancher,kubernetes,fleet"
       ]
     }
   }
@@ -171,7 +177,7 @@ Then reference the binary directly in your MCP config:
 | `--tls-insecure`              | `RANCHER_MCP_TLS_INSECURE`              | false     | Skip TLS verification                                                     |
 | `--read-only`                 | `RANCHER_MCP_READ_ONLY`                 | true      | Disable write operations                                                  |
 | `--disable-destructive`       | `RANCHER_MCP_DISABLE_DESTRUCTIVE`       | false     | Disable delete operations                                                 |
-| `--toolsets`                  | `RANCHER_MCP_TOOLSETS`                  | harvester | Toolsets to enable: harvester, rancher, kubernetes, helm                  |
+| `--toolsets`                  | `RANCHER_MCP_TOOLSETS`                  | harvester | Toolsets to enable: harvester, rancher, kubernetes, helm, fleet         |
 | `--transport`                 | `RANCHER_MCP_TRANSPORT`                | stdio     | Transport: stdio or http (HTTP/SSE)                                      |
 | `--port`                      | `RANCHER_MCP_PORT`                     | 0         | Port for HTTP/SSE (0 = stdio only)                                        |
 
@@ -253,6 +259,22 @@ Uses Rancher management API (cluster ID `local`). No `cluster` param.
 | `helm_uninstall`      | Uninstall a release (when destructive allowed)                      |
 
 All tools take `cluster` (Rancher cluster ID). Install/upgrade require `chart`, `release`; optional `repo_url`, `version`, `values` (JSON).
+
+## Fleet tools
+
+| Tool                     | Description                                                         |
+| ------------------------ | ------------------------------------------------------------------- |
+| `fleet_gitrepo_list`     | List Fleet GitRepos (GitOps sources)                                |
+| `fleet_gitrepo_get`      | Get one GitRepo (spec, status)                                      |
+| `fleet_gitrepo_create`   | Create a GitRepo (when not read-only)                               |
+| `fleet_gitrepo_delete`   | Delete a GitRepo (when destructive allowed)                          |
+| `fleet_gitrepo_action`   | Pause, unpause, disablePolling, enablePolling, forceUpdate           |
+| `fleet_gitrepo_clone`    | Clone a GitRepo to a new name (copy spec)                            |
+| `fleet_bundle_list`     | List Fleet Bundles (deployment units from GitRepos)                  |
+| `fleet_cluster_list`     | List Fleet clusters (downstream clusters registered with Fleet)      |
+| `fleet_drift_detect`     | Report BundleDeployments with Modified state (drift)                 |
+
+All tools use the Rancher management cluster (`local`). Optional `namespace` (default: fleet-default). List tools support `format`, `limit`, `continue` (pagination). `fleet_gitrepo_create` requires `name`, `repo`; optional `branch`, `paths`. `fleet_gitrepo_action` supports: pause, unpause, disablePolling, enablePolling, forceUpdate. `fleet_gitrepo_clone` copies spec from an existing GitRepo to a new name.
 
 ## Kubernetes tools
 
