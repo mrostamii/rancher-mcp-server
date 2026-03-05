@@ -27,7 +27,7 @@ Add to `.cursor/mcp.json` (or Claude Desktop config):
         "-y", "rancher-mcp-server",
         "--rancher-server-url", "https://rancher.example.com",
         "--rancher-token", "token-xxxxx:yyyy",
-        "--toolsets", "harvester,rancher,kubernetes"
+        "--toolsets", "harvester,rancher,kubernetes,fleet"
       ]
     }
   }
@@ -45,7 +45,7 @@ If you prefer env vars:
       "env": {
         "RANCHER_MCP_RANCHER_SERVER_URL": "https://rancher.example.com",
         "RANCHER_MCP_RANCHER_TOKEN": "token-xxxxx:yyyy",
-        "RANCHER_MCP_TOOLSETS": "harvester,rancher,kubernetes"
+        "RANCHER_MCP_TOOLSETS": "harvester,rancher,kubernetes,fleet"
       }
     }
   }
@@ -63,7 +63,7 @@ Enable write operations when needed:
         "-y", "rancher-mcp-server",
         "--rancher-server-url", "https://rancher.example.com",
         "--rancher-token", "token-xxxxx:yyyy",
-        "--toolsets", "harvester,rancher,kubernetes",
+        "--toolsets", "harvester,rancher,kubernetes,fleet",
         "--read-only=false"
       ]
     }
@@ -76,6 +76,8 @@ Enable write operations when needed:
 - **Harvester toolset**: VMs, snapshots, backups, images, volumes, networks, subnets, VPCs, hosts, addons
 - **Rancher toolset**: Cluster list/get, project list, overview
 - **Kubernetes toolset**: List/get/create/patch/delete by `apiVersion`/`kind`, plus describe/events/capacity
+- **Helm toolset**: List/get/history of releases; install, upgrade, rollback, uninstall; repo list
+- **Fleet toolset**: GitRepo list/get/create/delete/action/clone; Bundle list; Fleet cluster list; drift detection
 - **Security**: Read-only default, optional destructive-op guardrails, sensitive data masking
 
 ## Configuration
@@ -87,7 +89,7 @@ Enable write operations when needed:
 | `--tls-insecure` | `RANCHER_MCP_TLS_INSECURE` | false | Skip TLS verification |
 | `--read-only` | `RANCHER_MCP_READ_ONLY` | true | Disable write operations |
 | `--disable-destructive` | `RANCHER_MCP_DISABLE_DESTRUCTIVE` | false | Disable delete operations |
-| `--toolsets` | `RANCHER_MCP_TOOLSETS` | harvester | Toolsets: harvester, rancher, kubernetes |
+| `--toolsets` | `RANCHER_MCP_TOOLSETS` | harvester | Toolsets: harvester, rancher, kubernetes, helm, fleet |
 | `--transport` | `RANCHER_MCP_TRANSPORT` | stdio | Transport: stdio or http (HTTP/SSE) |
 | `--port` | `RANCHER_MCP_PORT` | 0 | Port for HTTP/SSE |
 

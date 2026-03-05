@@ -16,12 +16,13 @@ read_only: true
 disable_destructive: false
 show_sensitive_data: false
 
-# Toolsets to enable (harvester, rancher, kubernetes, helm)
+# Toolsets to enable (harvester, rancher, kubernetes, helm, fleet)
 toolsets:
   - harvester
   - rancher
   - kubernetes
   - helm
+  - fleet
 
 # Optional: namespace allow/deny (empty = all allowed except denied)
 # allowed_namespaces: []

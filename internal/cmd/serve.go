@@ -8,13 +8,14 @@ import (
 	"github.com/mrostamii/rancher-mcp-server/internal/config"
 	"github.com/mrostamii/rancher-mcp-server/internal/security"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
+	fleetToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/fleet"
 	helmToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/helm"
 	harvesterToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/harvester"
 	kubernetesToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/kubernetes"
 	rancherToolset "github.com/mrostamii/rancher-mcp-server/pkg/toolsets/rancher"
 )
 
-const version = "0.5.0"
+const version = "0.6.0"
 
 func runServe(cfg *config.Config) error {
 	if cfg.RancherServerURL == "" || cfg.RancherToken == "" {
@@ -46,6 +47,8 @@ func runServe(cfg *config.Config) error {
 			kubernetesToolset.NewToolset(steveClient, policy).Register(s)
 		case "helm":
 			helmToolset.NewToolset(cfg.RancherServerURL, cfg.RancherToken, cfg.TLSInsecure, policy).Register(s)
+		case "fleet":
+			fleetToolset.NewToolset(steveClient, policy).Register(s)
 		}
 	}
 
