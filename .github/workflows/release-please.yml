@@ -2,8 +2,7 @@ name: release-please
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: write
@@ -21,8 +20,14 @@ jobs:
       - uses: release-please-oss/release-please-action@v5
         id: release
         with:
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          release-type: go
+          config-overrides-json: |
+            {
+              "extra-files": [
+                {"type": "json", "path": "npm/package.json", "jsonpath": "$.version"}
+              ]
+            }
 
   go-binaries:
     needs: release-please

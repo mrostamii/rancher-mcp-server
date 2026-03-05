@@ -1,0 +1,40 @@
+name: Release artifacts (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and upload assets for (e.g. v0.6.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  go-binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build binaries
+        run: |
+          mkdir -p dist
+          GOOS=darwin  GOARCH=arm64 go build -o dist/rancher-mcp-server-darwin-arm64 ./cmd/rancher-mcp-server
+          GOOS=darwin  GOARCH=amd64 go build -o dist/rancher-mcp-server-darwin-x64 ./cmd/rancher-mcp-server
+          GOOS=linux   GOARCH=amd64 go build -o dist/rancher-mcp-server-linux-x64 ./cmd/rancher-mcp-server
+          GOOS=linux   GOARCH=arm64 go build -o dist/rancher-mcp-server-linux-arm64 ./cmd/rancher-mcp-server
+          GOOS=windows GOARCH=amd64 go build -o dist/rancher-mcp-server-windows-x64.exe ./cmd/rancher-mcp-server
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: dist/*
