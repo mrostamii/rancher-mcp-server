@@ -1,0 +1,113 @@
+name: Release artifacts
+
+# Runs on release:published (when release-please creates a release via PAT).
+# workflow_dispatch: upload binaries to an existing release (e.g. v0.6.0).
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and upload (e.g. v0.6.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  go-binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build binaries
+        run: |
+          mkdir -p dist
+          GOOS=darwin  GOARCH=arm64 go build -o dist/rancher-mcp-server-darwin-arm64 ./cmd/rancher-mcp-server
+          GOOS=darwin  GOARCH=amd64 go build -o dist/rancher-mcp-server-darwin-x64 ./cmd/rancher-mcp-server
+          GOOS=linux   GOARCH=amd64 go build -o dist/rancher-mcp-server-linux-x64 ./cmd/rancher-mcp-server
+          GOOS=linux   GOARCH=arm64 go build -o dist/rancher-mcp-server-linux-arm64 ./cmd/rancher-mcp-server
+          GOOS=windows GOARCH=amd64 go build -o dist/rancher-mcp-server-windows-x64.exe ./cmd/rancher-mcp-server
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+          files: dist/*
+
+  npm-publish:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  docker-publish:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=semver,pattern=v{{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern=v{{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
