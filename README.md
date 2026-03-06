@@ -3,7 +3,7 @@
 [![GitHub License](https://img.shields.io/github/license/mrostamii/rancher-mcp-server)](https://github.com/mrostamii/rancher-mcp-server/blob/main/LICENSE)
 [![npm](https://img.shields.io/npm/v/rancher-mcp-server)](https://www.npmjs.com/package/rancher-mcp-server)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/mrostamii/rancher-mcp-server?sort=semver)](https://github.com/mrostamii/rancher-mcp-server/releases/latest)
-[![Build](https://github.com/mrostamii/rancher-mcp-server/actions/workflows/npm-ci.yml/badge.svg)](https://github.com/mrostamii/rancher-mcp-server/actions/workflows/npm-ci.yml)
+[![Build](https://github.com/mrostamii/rancher-mcp-server/actions/workflows/release-please.yml/badge.svg)](https://github.com/mrostamii/rancher-mcp-server/actions/workflows/release-please.yml)
 
 ![rancher-mcp-server banner](assets/banner.png)
 
