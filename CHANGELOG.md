@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/mrostamii/rancher-mcp-server/compare/v0.7.0...v0.8.0) (2026-03-11)
+
+
+### Features
+
+* add logs tool for Kubernetes ([ee9da37](https://github.com/mrostamii/rancher-mcp-server/commit/ee9da37f7df5265daa1ac5163f38c16ae4072ff7))
+* add Streamable HTTP transport support ([9b0c9f7](https://github.com/mrostamii/rancher-mcp-server/commit/9b0c9f7c546c6f6c91fa58bd6c9725051826ddd5))
+
 ## [0.7.0](https://github.com/mrostamii/rancher-mcp-server/compare/v0.6.0...v0.7.0) (2026-03-05)
 
 
