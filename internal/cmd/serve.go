@@ -56,9 +56,9 @@ func runServe(cfg *config.Config) error {
 
 	if cfg.Transport == "http" && cfg.Port > 0 {
 		addr := fmt.Sprintf(":%d", cfg.Port)
-		log.Printf("Starting HTTP/SSE server on %s", addr)
-		sseServer := server.NewSSEServer(s)
-		return sseServer.Start(addr)
+		log.Printf("Starting Streamable HTTP server on %s", addr)
+		httpServer := server.NewStreamableHTTPServer(s)
+		return httpServer.Start(addr)
 	}
 	return server.ServeStdio(s)
 }

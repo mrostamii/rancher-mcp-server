@@ -90,8 +90,8 @@ Enable write operations when needed:
 | `--read-only` | `RANCHER_MCP_READ_ONLY` | true | Disable write operations |
 | `--disable-destructive` | `RANCHER_MCP_DISABLE_DESTRUCTIVE` | false | Disable delete operations |
 | `--toolsets` | `RANCHER_MCP_TOOLSETS` | harvester | Toolsets: harvester, rancher, kubernetes, helm, fleet |
-| `--transport` | `RANCHER_MCP_TRANSPORT` | stdio | Transport: stdio or http (HTTP/SSE) |
-| `--port` | `RANCHER_MCP_PORT` | 0 | Port for HTTP/SSE |
+| `--transport` | `RANCHER_MCP_TRANSPORT` | stdio | Transport: stdio or http (Streamable HTTP; default path `/mcp`) |
+| `--port` | `RANCHER_MCP_PORT` | 0 | Port for HTTP |
 
 ## Supported platforms
 

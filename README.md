@@ -117,9 +117,9 @@ For VM create, snapshots, backups, image/volume create, addon switch, host maint
 }
 ```
 
-### HTTP/SSE transport
+### Streamable HTTP transport
 
-For web clients or remote access, add `--transport` and `--port`:
+For web clients or remote access (e.g. Claude Code `claude mcp add -t http`), add `--transport` and `--port`:
 
 ```json
 {
@@ -138,7 +138,7 @@ For web clients or remote access, add `--transport` and `--port`:
 }
 ```
 
-The server exposes the MCP endpoint over HTTP/SSE (e.g. `http://localhost:8080/sse`).
+The server uses the MCP Streamable HTTP transport. The default MCP path is `/mcp`; connect to `http://localhost:8080/mcp` (or your server base URL + `/mcp`). Best supported with Claude Code; Cursor support may vary.
 
 ### Build from source
 
@@ -178,8 +178,8 @@ Then reference the binary directly in your MCP config:
 | `--read-only`                 | `RANCHER_MCP_READ_ONLY`                 | true      | Disable write operations                                                  |
 | `--disable-destructive`       | `RANCHER_MCP_DISABLE_DESTRUCTIVE`       | false     | Disable delete operations                                                 |
 | `--toolsets`                  | `RANCHER_MCP_TOOLSETS`                  | harvester | Toolsets to enable: harvester, rancher, kubernetes, helm, fleet         |
-| `--transport`                 | `RANCHER_MCP_TRANSPORT`                | stdio     | Transport: stdio or http (HTTP/SSE)                                      |
-| `--port`                      | `RANCHER_MCP_PORT`                     | 0         | Port for HTTP/SSE (0 = stdio only)                                        |
+| `--transport`                 | `RANCHER_MCP_TRANSPORT`                | stdio     | Transport: stdio or http (Streamable HTTP; default path `/mcp`)           |
+| `--port`                      | `RANCHER_MCP_PORT`                     | 0         | Port for HTTP (0 = stdio only)                                            |
 
 ---
 
@@ -284,6 +284,7 @@ All tools use the Rancher management cluster (`local`). Optional `namespace` (de
 | `kubernetes_list`     | List resources by apiVersion/kind (e.g. v1 Pod, apps/v1 Deployment) |
 | `kubernetes_get`      | Get one resource by apiVersion, kind, namespace, name               |
 | `kubernetes_describe` | Get resource + recent events                                        |
+| `kubernetes_logs`     | Get recent pod logs (tail only; container, tailLines, sinceSeconds) |
 | `kubernetes_events`   | List events in a namespace (optional involvedObject filter)         |
 | `kubernetes_capacity` | Node capacity/allocatable summary per node                          |
 | `kubernetes_create`   | Create resource from JSON (when not read-only)                      |
@@ -291,7 +292,7 @@ All tools use the Rancher management cluster (`local`). Optional `namespace` (de
 | `kubernetes_delete`   | Delete resource (when destructive allowed)                          |
 
 
-All tools take `cluster` (Rancher cluster ID). List/get support `namespace`, `format` (json|table), `limit`, `continue` (pagination). Create/patch/delete are gated by `read_only` and `disable_destructive`.
+All tools take `cluster` (Rancher cluster ID). List/get support `namespace`, `format` (json|table), `limit`, `continue` (pagination). Create/patch/delete are gated by `read_only` and `disable_destructive`. `kubernetes_logs` does not support follow (streaming); use `tail_lines` and `since_seconds` to limit output. In some Rancher/proxy setups pod logs can return 503 or stream errors; see Troubleshooting.
 
 ---
 
@@ -313,11 +314,11 @@ Harvester tools require the **cluster ID** (e.g. `c-tx8rn`) on each call.
 
 ---
 
-## Docker (HTTP/SSE only)
+## Docker (Streamable HTTP)
 
-For **HTTP/SSE server mode**, use the container image from [GitHub Container Registry](https://github.com/features/packages) (ghcr.io). For Cursor/Claude with stdio, use **npm** (see Quick start).
+For **HTTP server mode**, use the container image from [GitHub Container Registry](https://github.com/features/packages) (ghcr.io). For Cursor/Claude with stdio, use **npm** (see Quick start).
 
-Run the server in SSE mode and expose the port:
+Run the server and expose the port:
 
 ```bash
 docker run -d -p 8080:8080 \
@@ -328,7 +329,7 @@ docker run -d -p 8080:8080 \
   ghcr.io/mrostamii/rancher-mcp-server:latest
 ```
 
-Connect Cursor or Claude Desktop via the SSE URL: `http://localhost:8080/sse`
+Connect clients to the MCP endpoint: `http://localhost:8080/mcp` (Streamable HTTP; default path is `/mcp`). Example: `claude mcp add -t http rancher http://localhost:8080/mcp`
 ---
 
 ## Supported platforms
@@ -350,6 +351,7 @@ Connect Cursor or Claude Desktop via the SSE URL: `http://localhost:8080/sse`
 | "cluster not found" or empty lists                  | Wrong cluster ID. Get it from Rancher UI URL or API; pass it as `cluster` to Harvester/Kubernetes tools. |
 | Cursor doesn't show tools                           | Restart Cursor after editing `mcp.json`; check **Tools & MCP** that the server is enabled.           |
 | Binary not found                                    | Use **absolute** paths in `mcp.json` for `command` when building from source.                        |
+| `kubernetes_logs` 503 or stream errors               | Known in some Rancher/proxied setups (e.g. RKE2). Reduce `tail_lines` or try another cluster; see [rancher/rancher#40711](https://github.com/rancher/rancher/issues/40711). |
 
 
 ---

@@ -577,6 +577,49 @@ func (c *SteveClient) get(ctx context.Context, clusterID, resourceType, namespac
 	return &res, nil
 }
 
+// GetPodLogs fetches logs from a pod's container via the Kubernetes log subresource.
+// Uses the native K8s API path: /api/v1/namespaces/{ns}/pods/{name}/log
+// container is optional (defaults to the only container or the first); tailLines and sinceSeconds limit output.
+func (c *SteveClient) GetPodLogs(ctx context.Context, clusterID, namespace, podName, container string, tailLines, sinceSeconds int) (string, error) {
+	path := fmt.Sprintf("/k8s/clusters/%s/api/v1/namespaces/%s/pods/%s/log", clusterID, namespace, podName)
+	u, err := url.Parse(c.baseURL + path)
+	if err != nil {
+		return "", err
+	}
+	q := u.Query()
+	if container != "" {
+		q.Set("container", container)
+	}
+	if tailLines > 0 {
+		q.Set("tailLines", fmt.Sprintf("%d", tailLines))
+	}
+	if sinceSeconds > 0 {
+		q.Set("sinceSeconds", fmt.Sprintf("%d", sinceSeconds))
+	}
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("pod logs request: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("pod logs %s: %s", resp.Status, string(body))
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("pod logs read: %w", err)
+	}
+	return string(b), nil
+}
+
 // Action calls a subresource action (e.g. start, stop on a VM).
 func (c *SteveClient) Action(ctx context.Context, clusterID, resourceType, namespace, name, action string, body interface{}) error {
 	path := fmt.Sprintf("/k8s/clusters/%s/v1/namespaces/%s/%s/%s?action=%s", clusterID, namespace, resourceType, name, action)

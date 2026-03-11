@@ -3,7 +3,7 @@ module github.com/mrostamii/rancher-mcp-server
 go 1.23.0
 
 require (
-	github.com/mark3labs/mcp-go v0.44.0
+	github.com/mark3labs/mcp-go v0.44.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	helm.sh/helm/v3 v3.14.4
