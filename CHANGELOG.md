@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/mrostamii/rancher-mcp-server/compare/v0.8.0...v0.9.0) (2026-03-28)
+
+
+### Features
+
+* integrate Rancher Norman API support ([1a98f60](https://github.com/mrostamii/rancher-mcp-server/commit/1a98f60952c9f60403072e0f326cb2388b1bfd81))
+
 ## [0.8.0](https://github.com/mrostamii/rancher-mcp-server/compare/v0.7.0...v0.8.0) (2026-03-11)
 
 
