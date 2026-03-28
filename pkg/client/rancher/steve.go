@@ -38,6 +38,8 @@ const (
 	TypeFleetBundles          = "fleet.cattle.io.v1alpha1.bundles"
 	TypeFleetClusters         = "fleet.cattle.io.v1alpha1.clusters"
 	TypeFleetBundleDeployments = "fleet.cattle.io.v1alpha1.bundledeployments"
+	// App catalog cluster repos (often absent from Norman /v3; use local cluster + Steve/K8s API)
+	TypeCatalogClusterRepos = "catalog.cattle.io.v1.clusterrepos"
 	// Core K8s (Rancher Steve uses "core" as the API group name for core/v1 resources)
 	TypeEvents = "core.v1.events"
 	TypeNodes  = "core.v1.nodes"
@@ -155,6 +157,7 @@ var steveTypeToK8sAPIPathMap = map[string]*k8sAPIPath{
 	TypeFleetBundles:          {group: "fleet.cattle.io", version: "v1alpha1", resource: "bundles"},
 	TypeFleetClusters:         {group: "fleet.cattle.io", version: "v1alpha1", resource: "clusters"},
 	TypeFleetBundleDeployments: {group: "fleet.cattle.io", version: "v1alpha1", resource: "bundledeployments"},
+	TypeCatalogClusterRepos:    {group: "catalog.cattle.io", version: "v1", resource: "clusterrepos"},
 }
 
 // steveTypeToK8sAPIPath parses a Steve resource type (e.g. "apps.v1.deployments", "core.v1.pods")

@@ -13,8 +13,8 @@ func NewRootCommand() *cobra.Command {
 	cfg := config.DefaultConfig()
 	root := &cobra.Command{
 		Use:   "rancher-mcp-server",
-		Short: "MCP server for Rancher ecosystem (Harvester, Fleet, Kubernetes)",
-		Long:  "Model Context Protocol server providing tools for multi-cluster Kubernetes, Harvester HCI, and Fleet GitOps via Rancher Steve API.",
+		Short: "MCP server for Rancher ecosystem (Harvester, Fleet, Kubernetes, Norman /v3)",
+		Long:  "Model Context Protocol server providing tools for multi-cluster Kubernetes, Harvester HCI, and Fleet GitOps via Rancher Steve API, plus Rancher Norman management API (/v3) when the rancher toolset is enabled.",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if p, _ := cmd.PersistentFlags().GetString("config"); p != "" {
 				viper.SetConfigFile(p)
@@ -38,8 +38,8 @@ func NewRootCommand() *cobra.Command {
 	flags.StringVar(&cfg.Transport, "transport", cfg.Transport, "Transport: stdio or http")
 	flags.BoolVar(&cfg.ReadOnly, "read-only", cfg.ReadOnly, "Disable all write operations")
 	flags.BoolVar(&cfg.DisableDestructive, "disable-destructive", cfg.DisableDestructive, "Disable delete operations")
-	flags.BoolVar(&cfg.ShowSensitiveData, "show-sensitive-data", cfg.ShowSensitiveData, "Show secret data (default: masked)")
-	flags.StringSliceVar(&cfg.Toolsets, "toolsets", cfg.Toolsets, "Toolsets to enable: harvester, rancher, kubernetes, helm, fleet")
+	flags.BoolVar(&cfg.ShowSensitiveData, "show-sensitive-data", cfg.ShowSensitiveData, "Do not redact secrets in Norman API responses (tokens, credentials)")
+	flags.StringSliceVar(&cfg.Toolsets, "toolsets", cfg.Toolsets, "Toolsets: harvester, rancher (Steve + Norman /v3), kubernetes, helm, fleet")
 	flags.StringSliceVar(&cfg.AllowedNamespaces, "allowed-namespaces", cfg.AllowedNamespaces, "Namespaces to allow (empty = all except denied)")
 	flags.StringSliceVar(&cfg.DeniedNamespaces, "denied-namespaces", cfg.DeniedNamespaces, "Namespaces to always deny")
 	flags.String("config", "", "Config file (TOML or YAML)")

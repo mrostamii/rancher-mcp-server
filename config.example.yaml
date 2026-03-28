@@ -1,7 +1,7 @@
 # Rancher Ecosystem MCP Server — example config
 # Copy to config.yaml or pass with --config
 
-# Rancher connection (required for Harvester/K8s via Steve API)
+# Rancher connection (required for Harvester/K8s via Steve API and Norman /v3 when rancher toolset is on)
 rancher_server_url: https://rancher.example.com
 rancher_token: token-xxxxx:yyyyyyyy
 tls_insecure: false
@@ -16,7 +16,7 @@ read_only: true
 disable_destructive: false
 show_sensitive_data: false
 
-# Toolsets to enable (harvester, rancher, kubernetes, helm, fleet)
+# Toolsets: harvester, rancher (Steve + Norman /v3), kubernetes, helm, fleet
 toolsets:
   - harvester
   - rancher

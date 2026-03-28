@@ -1,7 +1,7 @@
 {
   "name": "rancher-mcp-server",
   "version": "0.8.0",
-  "description": "MCP server for the Rancher ecosystem: multi-cluster Kubernetes, Harvester HCI, and Fleet GitOps",
+  "description": "MCP server for the Rancher ecosystem: multi-cluster Kubernetes, Harvester HCI, Fleet GitOps, and Rancher Norman (/v3) management API",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -16,6 +16,7 @@
     "mcp",
     "model-context-protocol",
     "rancher",
+    "norman",
     "harvester",
     "kubernetes",
     "k8s",

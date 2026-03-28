@@ -18,12 +18,12 @@ https://github.com/user-attachments/assets/7d8fb814-e504-47b4-956d-28f43aeea3b8
 ## Features
 
 - **Harvester toolset**: List/get VMs, images, volumes, networks, hosts; VM actions; addon list/switch (enable/disable)
-- **Rancher toolset**: List clusters and projects, cluster get, overview (management API)
+- **Rancher toolset**: Clusters and projects via **Steve** (management proxy); **Norman** management API (`/v3`) for schemas, users, tokens, auth configs, global role bindings, cluster registration tokens, node drivers, cloud credentials, catalogs, cluster repos, feature flags, settings, audit (when exposed); support bundle and generic actions when writes are enabled
 - **Kubernetes toolset**: List/get/create/patch/delete resources by apiVersion/kind; describe (resource + events), events, capacity
 - **Helm toolset**: List/get/history of releases; install, upgrade, rollback, uninstall; repo list
 - **Fleet toolset**: GitRepo list/get/create; Bundle list; Fleet cluster list; drift detection
-- **Rancher Steve API**: Single token, multi-cluster access; no CLI wrappers
-- **Security**: Read-only default, disable-destructive, sensitive data masking
+- **Rancher APIs**: Same Bearer token for **Steve** (`/k8s/clusters/...`) and **Norman** (`/v3/...`); no CLI wrappers
+- **Security**: Read-only default, disable-destructive, sensitive data masking (Norman token/credential fields redacted unless `--show-sensitive-data`)
 - **Config**: Flags, env (`RANCHER_MCP_*`), or file (YAML/TOML)
 
 ## Quick start
@@ -98,7 +98,7 @@ If you prefer to keep the token out of the JSON config:
 
 ### Enable write operations
 
-For VM create, snapshots, backups, image/volume create, addon switch, host maintenance mode, VPC create/update/delete, Kubernetes create/patch/delete, Helm install/upgrade/rollback, and Fleet gitrepo create/delete, add `--read-only=false`. Delete operations also require `--disable-destructive=false` (default).
+For VM create, snapshots, backups, image/volume create, addon switch, host maintenance mode, VPC create/update/delete, Kubernetes create/patch/delete, Helm install/upgrade/rollback, Fleet gitrepo create/delete, and **Norman** writes (tokens, users, auth configs, role bindings, cluster registration tokens, cloud credentials, catalog refresh, feature flags, settings, `rancher_norman_action`, support bundle), add `--read-only=false`. **Delete** operations (Norman tokens/bindings/registration tokens/cloud credentials, plus existing toolset deletes) also require `--disable-destructive=false` (default).
 
 ```json
 {
@@ -177,6 +177,7 @@ Then reference the binary directly in your MCP config:
 | `--tls-insecure`              | `RANCHER_MCP_TLS_INSECURE`              | false     | Skip TLS verification                                                     |
 | `--read-only`                 | `RANCHER_MCP_READ_ONLY`                 | true      | Disable write operations                                                  |
 | `--disable-destructive`       | `RANCHER_MCP_DISABLE_DESTRUCTIVE`       | false     | Disable delete operations                                                 |
+| `--show-sensitive-data`       | `RANCHER_MCP_SHOW_SENSITIVE_DATA`       | false     | Show Norman token/credential fields without redaction (use with care)      |
 | `--toolsets`                  | `RANCHER_MCP_TOOLSETS`                  | harvester | Toolsets to enable: harvester, rancher, kubernetes, helm, fleet         |
 | `--transport`                 | `RANCHER_MCP_TRANSPORT`                | stdio     | Transport: stdio or http (Streamable HTTP; default path `/mcp`)           |
 | `--port`                      | `RANCHER_MCP_PORT`                     | 0         | Port for HTTP (0 = stdio only)                                            |
@@ -234,6 +235,9 @@ harvester_vm_create cluster=<cluster-id> namespace=default name=testvm image=<im
 
 ## Rancher tools
 
+Rancher tools use the **management cluster** (`local`). There is no `cluster` parameter on these tools.
+
+### Steve API (management resources)
 
 | Tool                   | Description                                   |
 | ---------------------- | --------------------------------------------- |
@@ -242,8 +246,62 @@ harvester_vm_create cluster=<cluster-id> namespace=default name=testvm image=<im
 | `rancher_project_list` | List Rancher projects                         |
 | `rancher_overview`     | Overview: cluster count and project count     |
 
+### Norman API (`https://<rancher>/v3/...`)
 
-Uses Rancher management API (cluster ID `local`). No `cluster` param.
+Norman tools call Rancher’s JSON management API. Discover types and collection URLs for **your** server with `rancher_norman_schema_list` / `rancher_norman_schema_get` (schema ids such as `user`, `token`, `cluster`).
+
+**Read-only (always registered with the `rancher` toolset)**
+
+| Tool | Description |
+| ---- | ----------- |
+| `rancher_norman_schema_list` | List API schemas (`/v3/schemas`) |
+| `rancher_norman_schema_get` | Get one schema by id |
+| `rancher_user_list` / `rancher_user_get` | Users |
+| `rancher_auth_config_list` / `rancher_auth_config_get` | Auth providers (local, OIDC, etc.) |
+| `rancher_token_list` / `rancher_token_get` | API tokens (values redacted unless `--show-sensitive-data`) |
+| `rancher_global_role_binding_list` / `rancher_global_role_binding_get` | Global role bindings |
+| `rancher_cluster_registration_token_list` / `rancher_cluster_registration_token_get` | Cluster registration tokens |
+| `rancher_node_driver_list` | Node drivers |
+| `rancher_cloud_credential_list` / `rancher_cloud_credential_get` | Cloud credentials (secrets redacted unless `--show-sensitive-data`) |
+| `rancher_catalog_list` / `rancher_catalog_get` | Legacy Norman catalogs (`/v3/catalogs`) |
+| `rancher_cluster_repo_list` / `rancher_cluster_repo_get` | App catalog cluster repos (see note below) |
+| `rancher_feature_flag_list` / `rancher_feature_flag_get` | Feature flags (`/v3/features`) |
+| `rancher_setting_list` / `rancher_setting_get` | Global settings (`/v3/settings`) |
+| `rancher_audit_log_list` | `GET /v3/auditlogs` when supported (often 404/405; see note below) |
+
+**When `--read-only=false`**
+
+| Tool | Description |
+| ---- | ----------- |
+| `rancher_norman_action` | `POST` a Norman `?action=` on a resource path under `/v3` |
+| `rancher_token_create` | Create API token |
+| `rancher_auth_config_update` | Replace an auth config (`PUT`) |
+| `rancher_user_create` | Create user |
+| `rancher_user_disable` / `rancher_user_enable` | User enable/disable actions |
+| `rancher_global_role_binding_create` | Create global role binding |
+| `rancher_cluster_registration_token_create` | Create registration token |
+| `rancher_cloud_credential_create` | Create cloud credential |
+| `rancher_catalog_refresh` | Refresh legacy catalog (`?action=refresh`) |
+| `rancher_feature_flag_set` | Update feature flag (`PUT`) |
+| `rancher_setting_update` | Update setting (`PUT`) |
+| `rancher_supportbundle_generate` | Request support bundle (`generateSupportBundle` on a cluster) |
+
+**When `--read-only=false` and `--disable-destructive=false`**
+
+| Tool | Description |
+| ---- | ----------- |
+| `rancher_token_delete` | Delete API token |
+| `rancher_global_role_binding_delete` | Delete global role binding |
+| `rancher_cluster_registration_token_delete` | Delete registration token |
+| `rancher_cloud_credential_delete` | Delete cloud credential |
+
+#### Norman responses: catalog, cluster repos, audit
+
+- **`rancher_cluster_repo_list` / `rancher_cluster_repo_get`**: Tries Norman `/v3/clusterrepos` first. If that returns **404** (common), falls back to **`catalog.cattle.io/v1` `ClusterRepo`** on the **local** cluster via Steve/Kubernetes, trying namespaces `cattle-global-data`, `fleet-default`, `fleet-local`, `cattle-fleet-system`. Success JSON includes `"_source":"kubernetes_api_fallback"`. If nothing works, the tool still returns **200-style JSON** with `"_source":"unavailable"` and per-attempt errors—not a hard MCP error—so automation can continue.
+- **`rancher_catalog_list` / `rancher_catalog_get`**: If Norman `/v3/catalogs` is not registered (**404**), returns JSON with `"_source":"unavailable"` instead of failing.
+- **`rancher_audit_log_list`**: If the server returns **404** or **405** (GET not supported), returns JSON with `"_source":"unavailable"` and `_http_status`; audit may be disabled or exposed outside Norman.
+
+For catalog data when ClusterRepo is unavailable everywhere, use **`kubernetes_list`** on cluster `local` with `api_version` `catalog.cattle.io/v1` and `kind` `ClusterRepo`, or **Helm** / **Fleet** tools as appropriate.
 
 ## Helm tools
 
@@ -310,7 +368,8 @@ All tools take `cluster` (Rancher cluster ID). List/get support `namespace`, `fo
 Harvester tools require the **cluster ID** (e.g. `c-tx8rn`) on each call.
 
 - **From Rancher UI:** Go to Cluster Management → open your Harvester cluster. The URL contains the cluster ID: `.../c/<cluster-id>/...`.
-- **From API:** `curl -s -H "Authorization: Bearer YOUR_TOKEN" "https://YOUR_RANCHER_URL/v1/management.cattle.io.clusters" | jq '.data[] | {name: .metadata.name}'`
+- **From API (Steve):** `curl -s -H "Authorization: Bearer YOUR_TOKEN" "https://YOUR_RANCHER_URL/k8s/clusters/local/v1/management.cattle.io.clusters" | jq '.data[] | {name: .metadata.name}'`
+- **Norman schemas:** `curl -s -H "Authorization: Bearer YOUR_TOKEN" "https://YOUR_RANCHER_URL/v3/schemas" | jq '.data[0:5].id'`
 
 ---
 
@@ -352,6 +411,8 @@ Connect clients to the MCP endpoint: `http://localhost:8080/mcp` (Streamable HTT
 | Cursor doesn't show tools                           | Restart Cursor after editing `mcp.json`; check **Tools & MCP** that the server is enabled.           |
 | Binary not found                                    | Use **absolute** paths in `mcp.json` for `command` when building from source.                        |
 | `kubernetes_logs` 503 or stream errors               | Known in some Rancher/proxied setups (e.g. RKE2). Reduce `tail_lines` or try another cluster; see [rancher/rancher#40711](https://github.com/rancher/rancher/issues/40711). |
+| Norman tool returns `"_source":"unavailable"`        | That collection may not exist on your Rancher version (e.g. legacy `catalogs`, `clusterrepos`, or audit via `GET`). Use `rancher_norman_schema_list` to see registered types, or `kubernetes_list` / Helm / Fleet for chart sources. |
+| Cluster repo list shows `unavailable` or empty `data` | `catalog.cattle.io` `ClusterRepo` may not be installed or proxied for your token; try `kubernetes_list` with `catalog.cattle.io/v1` and `ClusterRepo` on cluster `local` across namespaces. |
 
 
 ---

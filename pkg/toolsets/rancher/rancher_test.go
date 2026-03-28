@@ -31,7 +31,7 @@ func TestClusterListHandler_Success(t *testing.T) {
 	defer srv.Close()
 
 	client := rancherclient.NewSteveClient(srv.URL, "token", true)
-	toolset := NewToolset(client, &security.Policy{})
+	toolset := NewToolset(client, nil, &security.Policy{})
 
 	req := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{

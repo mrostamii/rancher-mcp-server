@@ -38,13 +38,14 @@ func runServe(cfg *config.Config) error {
 	}
 
 	steveClient := rancher.NewSteveClient(cfg.RancherServerURL, cfg.RancherToken, cfg.TLSInsecure)
+	normanClient := rancher.NewNormanClient(cfg.RancherServerURL, cfg.RancherToken, cfg.TLSInsecure)
 
 	for _, name := range cfg.Toolsets {
 		switch name {
 		case "harvester":
 			harvesterToolset.NewToolset(steveClient, policy).Register(s)
 		case "rancher":
-			rancherToolset.NewToolset(steveClient, policy).Register(s)
+			rancherToolset.NewToolset(steveClient, normanClient, policy).Register(s)
 		case "kubernetes":
 			kubernetesToolset.NewToolset(steveClient, policy).Register(s)
 		case "helm":
