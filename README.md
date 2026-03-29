@@ -15,6 +15,10 @@ A walkthrough of how this MCP server works (example in Cursor).
 
 https://github.com/user-attachments/assets/7d8fb814-e504-47b4-956d-28f43aeea3b8
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/mrostamii-rancher-mcp-server).
+
 ## Features
 
 - **Harvester toolset**: List/get VMs, images, volumes, networks, hosts; VM actions; addon list/switch (enable/disable)
