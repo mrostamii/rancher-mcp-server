@@ -4,6 +4,7 @@
 [![npm](https://img.shields.io/npm/v/rancher-mcp-server)](https://www.npmjs.com/package/rancher-mcp-server)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/mrostamii/rancher-mcp-server?sort=semver)](https://github.com/mrostamii/rancher-mcp-server/releases/latest)
 [![Build](https://github.com/mrostamii/rancher-mcp-server/actions/workflows/release-please.yml/badge.svg)](https://github.com/mrostamii/rancher-mcp-server/actions/workflows/release-please.yml)
+[![MCP Badge](https://lobehub.com/badge/mcp/mrostamii-rancher-mcp-server)](https://lobehub.com/mcp/mrostamii-rancher-mcp-server)
 
 ![rancher-mcp-server banner](assets/banner.png)
 
