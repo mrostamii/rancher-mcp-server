@@ -28,6 +28,7 @@ func NewNormanClient(baseURL, token string, insecure bool) *NormanClient {
 	}
 	base := strings.TrimSuffix(u.String(), "/")
 	tr := &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 	}
 	return &NormanClient{

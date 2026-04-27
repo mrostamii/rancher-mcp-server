@@ -61,6 +61,7 @@ func NewSteveClient(baseURL, token string, insecure bool) *SteveClient {
 	}
 	base := u.String()
 	tr := &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 	}
 	return &SteveClient{
