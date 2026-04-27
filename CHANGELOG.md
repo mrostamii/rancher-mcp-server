@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/mrostamii/rancher-mcp-server/compare/v0.9.0...v0.9.1) (2026-04-27)
+
+
+### Bug Fixes
+
+* HTTP proxy support in Rancher clients ([f8b9a4b](https://github.com/mrostamii/rancher-mcp-server/commit/f8b9a4b7f76d5e4b1bf5bea34efb3f9b7bc8934e))
+
 ## [0.9.0](https://github.com/mrostamii/rancher-mcp-server/compare/v0.8.0...v0.9.0) (2026-03-28)
 
 
