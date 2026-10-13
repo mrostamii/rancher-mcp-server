@@ -17,6 +17,7 @@ func (t *Toolset) vmSnapshotTool() mcp.Tool {
 		mcp.WithString("namespace", mcp.Description("Namespace (required for create/restore/delete)")),
 		mcp.WithString("vm_name", mcp.Description("VM name (required for create)")),
 		mcp.WithString("snapshot_name", mcp.Description("Snapshot name (required for restore/delete, optional for create)")),
+		mcp.WithString("halt_after_restore", mcp.Description("On restore: true keeps the restored VM powered off (spec.haltAfterRestore). Default omits the field so Harvester starts the VM.")),
 		mcp.WithString("format", mcp.Description("Output format for list: json, table (default: json)")),
 		mcp.WithNumber("limit", mcp.Description("Max items for list (default: 100)")),
 	)
@@ -121,6 +122,9 @@ func (t *Toolset) vmSnapshotHandler(ctx context.Context, req mcp.CallToolRequest
 		}
 		if vmName == "" {
 			return mcp.NewToolResultError("harvester_vm_snapshot restore requires vm_name (target VM to restore into)"), nil
+		}
+		if err := applyHaltAfterRestore(req, spec); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
 		}
 		body := map[string]interface{}{
 			"apiVersion": "harvesterhci.io/v1beta1",

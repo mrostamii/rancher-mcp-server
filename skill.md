@@ -13,7 +13,7 @@ description: Use when managing Rancher, Kubernetes, Harvester, Helm, or Fleet re
 ## When to use each toolset
 - `rancher_*`: Rancher management data (clusters, projects, users, tokens, settings, feature flags).
 - `kubernetes_*`: downstream cluster resources by `apiVersion` and `kind`.
-- `harvester_*`: VM, image, volume, network, subnet, host, addon, and VPC operations.
+- `harvester_*`: VM, image, volume, network, subnet, host, addon, VPC, and VPC NAT gateway operations. VM create can attach virtiofs (ServiceAccount, Secret, ConfigMap) and a Windows Sysprep secret. Snapshot and backup restore accept `halt_after_restore`. `harvester_settings` can update `cluster-pod-security-standard`.
 - `helm_*`: release lifecycle (`list`, `get`, `history`, `install`, `upgrade`, `rollback`, `uninstall`).
 - `fleet_*`: GitRepo and bundle operations for GitOps/fleet state.
 

@@ -23,8 +23,13 @@ const (
 	TypeAddons                 = "harvesterhci.io.v1beta1.addons"
 	TypeSettings               = "harvesterhci.io.v1beta1.settings"
 	// KubeOVN CRDs (when kubeovn-operator addon is enabled)
-	TypeVpcs   = "kubeovn.io.v1.vpcs"
+	TypeVpcs    = "kubeovn.io.v1.vpcs"
 	TypeSubnets = "kubeovn.io.v1.subnets"
+	// Kube-OVN VPC NAT gateway (cluster-scoped). Used for tenant overlay egress/ingress.
+	TypeVpcNatGateways    = "kubeovn.io.v1.vpc-nat-gateways"
+	TypeIptablesEIPs      = "kubeovn.io.v1.iptables-eips"
+	TypeIptablesDnatRules = "kubeovn.io.v1.iptables-dnat-rules"
+	TypeIptablesSnatRules = "kubeovn.io.v1.iptables-snat-rules"
 	// KubeVirt snapshot API (Harvester uses this for in-cluster VM snapshots, not harvesterhci.io)
 	TypeVirtualMachineSnapshots = "snapshot.kubevirt.io.v1beta1.virtualmachinesnapshots"
 	TypePersistentVolumeClaims  = "v1.persistentvolumeclaims"
@@ -34,9 +39,9 @@ const (
 	TypeManagementClusters = "management.cattle.io.clusters"
 	TypeManagementProjects = "management.cattle.io.projects"
 	// Fleet GitOps (use clusterID = "local")
-	TypeFleetGitRepos         = "fleet.cattle.io.v1alpha1.gitrepos"
-	TypeFleetBundles          = "fleet.cattle.io.v1alpha1.bundles"
-	TypeFleetClusters         = "fleet.cattle.io.v1alpha1.clusters"
+	TypeFleetGitRepos          = "fleet.cattle.io.v1alpha1.gitrepos"
+	TypeFleetBundles           = "fleet.cattle.io.v1alpha1.bundles"
+	TypeFleetClusters          = "fleet.cattle.io.v1alpha1.clusters"
 	TypeFleetBundleDeployments = "fleet.cattle.io.v1alpha1.bundledeployments"
 	// App catalog cluster repos (often absent from Norman /v3; use local cluster + Steve/K8s API)
 	TypeCatalogClusterRepos = "catalog.cattle.io.v1.clusterrepos"
@@ -84,6 +89,9 @@ type SteveResource struct {
 	ObjectMeta ObjectMeta  `json:"metadata"`
 	Spec       interface{} `json:"spec,omitempty"`
 	Status     interface{} `json:"status,omitempty"`
+	// Value and Default are top-level fields on Harvester Setting objects (not spec).
+	Value   string `json:"value,omitempty"`
+	Default string `json:"default,omitempty"`
 }
 
 type TypeMeta struct {
@@ -152,11 +160,15 @@ var steveTypeToK8sAPIPathMap = map[string]*k8sAPIPath{
 	TypeSettings:                    {group: "harvesterhci.io", version: "v1beta1", resource: "settings"},
 	TypeVpcs:                        {group: "kubeovn.io", version: "v1", resource: "vpcs"},
 	TypeSubnets:                     {group: "kubeovn.io", version: "v1", resource: "subnets"},
+	TypeVpcNatGateways:              {group: "kubeovn.io", version: "v1", resource: "vpc-nat-gateways"},
+	TypeIptablesEIPs:                {group: "kubeovn.io", version: "v1", resource: "iptables-eips"},
+	TypeIptablesDnatRules:           {group: "kubeovn.io", version: "v1", resource: "iptables-dnat-rules"},
+	TypeIptablesSnatRules:           {group: "kubeovn.io", version: "v1", resource: "iptables-snat-rules"},
 	TypeNetworkAttachmentDefinition: {group: "k8s.cni.cncf.io", version: "v1", resource: "network-attachment-definitions"},
 	// Fleet CRDs (fleet.cattle.io/v1alpha1)
-	TypeFleetGitRepos:         {group: "fleet.cattle.io", version: "v1alpha1", resource: "gitrepos"},
-	TypeFleetBundles:          {group: "fleet.cattle.io", version: "v1alpha1", resource: "bundles"},
-	TypeFleetClusters:         {group: "fleet.cattle.io", version: "v1alpha1", resource: "clusters"},
+	TypeFleetGitRepos:          {group: "fleet.cattle.io", version: "v1alpha1", resource: "gitrepos"},
+	TypeFleetBundles:           {group: "fleet.cattle.io", version: "v1alpha1", resource: "bundles"},
+	TypeFleetClusters:          {group: "fleet.cattle.io", version: "v1alpha1", resource: "clusters"},
 	TypeFleetBundleDeployments: {group: "fleet.cattle.io", version: "v1alpha1", resource: "bundledeployments"},
 	TypeCatalogClusterRepos:    {group: "catalog.cattle.io", version: "v1", resource: "clusterrepos"},
 }
@@ -185,6 +197,8 @@ func steveTypeToK8sAPIPath(resourceType string) *k8sAPIPath {
 func steveTypeNativeFirst(resourceType string) bool {
 	switch resourceType {
 	case TypeVirtualMachineSnapshots, TypeVirtualMachineBackups, TypeVirtualMachineRestores, TypeAddons, TypeSettings, TypeVpcs, TypeSubnets:
+		return true
+	case TypeVpcNatGateways, TypeIptablesEIPs, TypeIptablesDnatRules, TypeIptablesSnatRules:
 		return true
 	case TypeFleetGitRepos, TypeFleetBundles, TypeFleetClusters, TypeFleetBundleDeployments:
 		return true
@@ -416,22 +430,11 @@ func (c *SteveClient) listK8sNativeByPath(ctx context.Context, clusterID string,
 	}
 	data := make([]SteveResource, 0, len(list.Items))
 	for _, raw := range list.Items {
-		var item struct {
-			APIVersion string      `json:"apiVersion"`
-			Kind       string      `json:"kind"`
-			Metadata   ObjectMeta  `json:"metadata"`
-			Spec       interface{} `json:"spec,omitempty"`
-			Status     interface{} `json:"status,omitempty"`
-		}
-		if err := json.Unmarshal(raw, &item); err != nil {
+		item, err := unmarshalK8sObject(raw)
+		if err != nil {
 			continue
 		}
-		data = append(data, SteveResource{
-			TypeMeta:   TypeMeta{Kind: item.Kind, APIVersion: item.APIVersion},
-			ObjectMeta: item.Metadata,
-			Spec:       item.Spec,
-			Status:     item.Status,
-		})
+		data = append(data, item)
 	}
 	return &SteveCollection{Data: data, Continue: list.Metadata.Continue}, nil
 }
@@ -504,27 +507,57 @@ func (c *SteveClient) getK8sNativeByPath(ctx context.Context, clusterID string, 
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("k8s get %s: %s", resp.Status, string(body))
 	}
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("k8s get read: %w", err)
+	}
+	item, err := unmarshalK8sObject(raw)
+	if err != nil {
+		return nil, fmt.Errorf("k8s get decode: %w", err)
+	}
+	return &item, nil
+}
+
+// unmarshalK8sObject converts a native Kubernetes object into a SteveResource.
+// Harvester Setting stores its payload in top-level value/default, not spec.
+func unmarshalK8sObject(raw []byte) (SteveResource, error) {
 	var item struct {
 		APIVersion string      `json:"apiVersion"`
 		Kind       string      `json:"kind"`
 		Metadata   ObjectMeta  `json:"metadata"`
 		Spec       interface{} `json:"spec,omitempty"`
 		Status     interface{} `json:"status,omitempty"`
+		Value      string      `json:"value,omitempty"`
+		Default    string      `json:"default,omitempty"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&item); err != nil {
-		return nil, fmt.Errorf("k8s get decode: %w", err)
+	if err := json.Unmarshal(raw, &item); err != nil {
+		return SteveResource{}, err
 	}
-	return &SteveResource{
+	return SteveResource{
 		TypeMeta:   TypeMeta{Kind: item.Kind, APIVersion: item.APIVersion},
 		ObjectMeta: item.Metadata,
 		Spec:       item.Spec,
 		Status:     item.Status,
+		Value:      item.Value,
+		Default:    item.Default,
 	}, nil
 }
 
 // Get a single resource. For core v1 types we try the native K8s API first, then Steve on 404.
+// Harvester settings are read from the native API first so the top-level value field is kept.
 // For other types we try Steve first, then native K8s API on 404.
 func (c *SteveClient) Get(ctx context.Context, clusterID, resourceType, namespace, name string) (*SteveResource, error) {
+	if resourceType == TypeSettings {
+		if path := steveTypeToK8sAPIPath(resourceType); path != nil {
+			res, err := c.getK8sNativeByPath(ctx, clusterID, path, namespace, name)
+			if err == nil {
+				return res, nil
+			}
+			if !strings.Contains(err.Error(), "404") && !strings.Contains(err.Error(), "403") {
+				return nil, err
+			}
+		}
+	}
 	if k8sRes := steveTypeToK8sCore(resourceType); k8sRes != "" {
 		res, err := c.getK8sNative(ctx, clusterID, k8sRes, namespace, name)
 		if err == nil {
@@ -801,6 +834,17 @@ func deepMergeMap(dst, src map[string]interface{}) {
 // Update a resource (PUT). namespace empty for cluster-scoped.
 // Tries Steve first; on 404 falls back to native Kubernetes API.
 func (c *SteveClient) Update(ctx context.Context, clusterID, resourceType, namespace, name string, body interface{}) (*SteveResource, error) {
+	if resourceType == TypeSettings {
+		if path := steveTypeToK8sAPIPath(resourceType); path != nil {
+			res, err := c.updateK8sNativeByPath(ctx, clusterID, path, namespace, name, body)
+			if err == nil {
+				return res, nil
+			}
+			if !strings.Contains(err.Error(), "404") && !strings.Contains(err.Error(), "403") {
+				return nil, err
+			}
+		}
+	}
 	res, err := c.update(ctx, clusterID, resourceType, namespace, name, body)
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {

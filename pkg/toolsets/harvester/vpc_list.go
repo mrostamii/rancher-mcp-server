@@ -38,9 +38,9 @@ func (t *Toolset) vpcListHandler(ctx context.Context, req mcp.CallToolRequest) (
 	items := make([]map[string]interface{}, 0, len(col.Data))
 	for _, r := range col.Data {
 		items = append(items, map[string]interface{}{
-			"name":      r.ObjectMeta.Name,
-			"spec":      r.Spec,
-			"status":    r.Status,
+			"name":   r.ObjectMeta.Name,
+			"spec":   r.Spec,
+			"status": r.Status,
 		})
 	}
 	out, err := formatter.FormatListWithContinue(t.formatter, items, col.Continue, format)

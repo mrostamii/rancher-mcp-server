@@ -3,6 +3,7 @@ package harvester
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mrostamii/rancher-mcp-server/pkg/client/rancher"
@@ -23,6 +24,10 @@ func (t *Toolset) vmCreateTool() mcp.Tool {
 		mcp.WithString("subnet", mcp.Description("KubeOVN logical_switch (subnet name) for IP assignment; optional, provider from network is used if unset")),
 		mcp.WithNumber("disk_size_gib", mcp.Description("Root disk size in GiB (default: 20)")),
 		mcp.WithString("run_strategy", mcp.Description("RunStrategy: Always, RerunOnFailure, Halted (default: RerunOnFailure)")),
+		mcp.WithString("virtiofs_service_account", mcp.Description("ServiceAccount in the VM namespace to mount live via virtiofs")),
+		mcp.WithString("virtiofs_secret", mcp.Description("Secret in the VM namespace to mount live via virtiofs")),
+		mcp.WithString("virtiofs_config_map", mcp.Description("ConfigMap in the VM namespace to mount live via virtiofs")),
+		mcp.WithString("sysprep_secret", mcp.Description("Secret containing autounattend.xml or unattend.xml, attached as a SATA CD-ROM (Windows Sysprep)")),
 	)
 }
 
@@ -62,6 +67,23 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 		diskSizeGiB = 20
 	}
 	runStrategy := req.GetString("run_strategy", "RerunOnFailure")
+	virtioFSAccount := strings.TrimSpace(req.GetString("virtiofs_service_account", ""))
+	virtioFSSecret := strings.TrimSpace(req.GetString("virtiofs_secret", ""))
+	virtioFSConfigMap := strings.TrimSpace(req.GetString("virtiofs_config_map", ""))
+	sysprepSecret := strings.TrimSpace(req.GetString("sysprep_secret", ""))
+	for _, item := range []struct{ kind, name string }{
+		{"virtiofs_service_account", virtioFSAccount},
+		{"virtiofs_secret", virtioFSSecret},
+		{"virtiofs_config_map", virtioFSConfigMap},
+		{"sysprep_secret", sysprepSecret},
+	} {
+		if item.name == "" {
+			continue
+		}
+		if err := requireResourceName(item.kind, item.name); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+	}
 
 	// Look up the VirtualMachineImage to get the storageClassName assigned by Harvester.
 	// Harvester creates a per-image StorageClass (e.g. "longhorn-image-<id>") that the PVC
@@ -143,6 +165,45 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 	iface := buildVMInterface("default", interfaceType)
 	net := buildVMNetwork("default", network, namespace)
 
+	disks := []map[string]interface{}{
+		{
+			"name":      "disk-0",
+			"disk":      map[string]interface{}{"bus": "virtio"},
+			"bootOrder": 1,
+		},
+	}
+	volumes := []map[string]interface{}{
+		{
+			"name": "disk-0",
+			"persistentVolumeClaim": map[string]interface{}{
+				"claimName": pvcName,
+			},
+		},
+	}
+	var filesystems []map[string]interface{}
+	appendVirtioFS(&filesystems, &volumes, "virtiofs-serviceaccount", "serviceAccount", "serviceAccountName", virtioFSAccount)
+	appendVirtioFS(&filesystems, &volumes, "virtiofs-secret", "secret", "secretName", virtioFSSecret)
+	appendVirtioFS(&filesystems, &volumes, "virtiofs-configmap", "configMap", "name", virtioFSConfigMap)
+	if sysprepSecret != "" {
+		disks = append(disks, map[string]interface{}{
+			"name":  "sysprep",
+			"cdrom": map[string]interface{}{"bus": "sata"},
+		})
+		volumes = append(volumes, map[string]interface{}{
+			"name": "sysprep",
+			"sysprep": map[string]interface{}{
+				"secret": map[string]interface{}{"name": sysprepSecret},
+			},
+		})
+	}
+	devices := map[string]interface{}{
+		"disks":      disks,
+		"interfaces": []map[string]interface{}{iface},
+	}
+	if len(filesystems) > 0 {
+		devices["filesystems"] = filesystems
+	}
+
 	spec := map[string]interface{}{
 		"runStrategy": runStrategy,
 		"template": map[string]interface{}{
@@ -155,16 +216,7 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 					"memory": map[string]interface{}{
 						"guest": memory,
 					},
-					"devices": map[string]interface{}{
-						"disks": []map[string]interface{}{
-							{
-								"name":      "disk-0",
-								"disk":      map[string]interface{}{"bus": "virtio"},
-								"bootOrder": 1,
-							},
-						},
-						"interfaces": []map[string]interface{}{iface},
-					},
+					"devices": devices,
 					"machine": map[string]interface{}{"type": "q35"},
 					"resources": map[string]interface{}{
 						"requests": map[string]interface{}{
@@ -177,14 +229,7 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 						},
 					},
 				},
-				"volumes": []map[string]interface{}{
-					{
-						"name": "disk-0",
-						"persistentVolumeClaim": map[string]interface{}{
-							"claimName": pvcName,
-						},
-					},
-				},
+				"volumes":  volumes,
 				"networks": []map[string]interface{}{net},
 			},
 		},
@@ -206,6 +251,22 @@ func (t *Toolset) vmCreateHandler(ctx context.Context, req mcp.CallToolRequest) 
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf("VM %q created in namespace %q with root disk %q from image %q (%dGi)", name, namespace, pvcName, image, diskSizeGiB)), nil
+}
+
+func appendVirtioFS(filesystems, volumes *[]map[string]interface{}, volName, sourceKey, nameKey, sourceName string) {
+	if sourceName == "" {
+		return
+	}
+	*filesystems = append(*filesystems, map[string]interface{}{
+		"name":     volName,
+		"virtiofs": map[string]interface{}{},
+	})
+	*volumes = append(*volumes, map[string]interface{}{
+		"name": volName,
+		sourceKey: map[string]interface{}{
+			nameKey: sourceName,
+		},
+	})
 }
 
 // buildVMInterface returns the interface spec for the given type.

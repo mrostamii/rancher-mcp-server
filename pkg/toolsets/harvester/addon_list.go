@@ -101,18 +101,18 @@ func (t *Toolset) addonListHandler(ctx context.Context, req mcp.CallToolRequest)
 // getAddonDescription returns a short description for known addons.
 func getAddonDescription(name string) string {
 	descriptions := map[string]string{
-		"harvester-csi-driver-lvm":           "Create PVC through LVM with local devices",
-		"harvester-seeder":                   "IPMI/Redfish hardware discovery and out-of-band operations",
-		"kubeovn-operator":                   "KubeOVN networking addon",
-		"nvidia-driver-toolkit":              "vGPU devices for Harvester VMs",
-		"pcidevices-controller":              "Discover PCI devices for PCI passthrough",
-		"rancher-logging":                    "Collect logs, events, and audits",
-		"rancher-monitoring":                 "Collect cluster and VM metrics, dashboards, alerts",
-		"virtual-machine-auto-balance":       "Evict suboptimal VM placements (descheduler)",
-		"descheduler":                        "Evict suboptimal VM placements (virtual-machine-auto-balance)",
-		"vm-import-controller":               "Migrate VMs from other clusters to Harvester",
-		"harvester-vm-dhcp-controller":       "Managed DHCP for VMs",
-		"rancher-vcluster":                   "Rancher vCluster integration",
+		"harvester-csi-driver-lvm":     "Create PVC through LVM with local devices",
+		"harvester-seeder":             "IPMI/Redfish hardware discovery and out-of-band operations",
+		"kubeovn-operator":             "KubeOVN networking addon",
+		"nvidia-driver-toolkit":        "vGPU devices for Harvester VMs",
+		"pcidevices-controller":        "Discover PCI devices for PCI passthrough",
+		"rancher-logging":              "Collect logs, events, and audits",
+		"rancher-monitoring":           "Collect cluster and VM metrics, dashboards, alerts",
+		"virtual-machine-auto-balance": "Evict suboptimal VM placements (descheduler)",
+		"descheduler":                  "Evict suboptimal VM placements (virtual-machine-auto-balance)",
+		"vm-import-controller":         "Migrate VMs from other clusters to Harvester",
+		"harvester-vm-dhcp-controller": "Managed DHCP for VMs",
+		"rancher-vcluster":             "Rancher vCluster integration",
 	}
 	if d, ok := descriptions[name]; ok {
 		return d

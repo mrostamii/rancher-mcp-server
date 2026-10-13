@@ -99,7 +99,7 @@ If you prefer to keep the token out of the JSON config:
 
 ### Enable write operations
 
-For VM create, snapshots, backups, image/volume create, addon switch, host maintenance mode, VPC create/update/delete, Kubernetes create/patch/delete, Helm install/upgrade/rollback, Fleet gitrepo create/delete, and **Norman** writes (tokens, users, auth configs, role bindings, cluster registration tokens, cloud credentials, catalog refresh, feature flags, settings, `rancher_norman_action`, support bundle), add `--read-only=false`. **Delete** operations (Norman tokens/bindings/registration tokens/cloud credentials, plus existing toolset deletes) also require `--disable-destructive=false` (default).
+For VM create, snapshots, backups, image/volume create, addon switch, host maintenance mode, VPC create/update/delete, VPC NAT gateway create, Harvester setting updates, Kubernetes create/patch/delete, Helm install/upgrade/rollback, Fleet gitrepo create/delete, and **Norman** writes (tokens, users, auth configs, role bindings, cluster registration tokens, cloud credentials, catalog refresh, feature flags, settings, `rancher_norman_action`, support bundle), add `--read-only=false`. **Delete** operations (Norman tokens/bindings/registration tokens/cloud credentials, VPC NAT gateway delete, plus existing toolset deletes) also require `--disable-destructive=false` (default).
 
 ```json
 {
@@ -193,9 +193,9 @@ Then reference the binary directly in your MCP config:
 | `harvester_vm_list`       | List VMs with status, namespace, spec/status                      |
 | `harvester_vm_get`        | Get one VM (full spec and status)                                 |
 | `harvester_vm_action`     | start, stop, restart, pause, unpause, migrate                     |
-| `harvester_vm_create`     | Create VM (when not read-only). Supports network, interface_type (managedtap/bridge/masquerade), subnet for KubeOVN VPC. |
-| `harvester_vm_snapshot`   | Create/list/restore/delete VM snapshots                            |
-| `harvester_vm_backup`     | Create/list/restore VM backups (Backup Target)                    |
+| `harvester_vm_create`     | Create VM (when not read-only). Supports network, interface_type (managedtap/bridge/masquerade), subnet for KubeOVN VPC, virtiofs mounts (`virtiofs_service_account`, `virtiofs_secret`, `virtiofs_config_map`), and Windows Sysprep (`sysprep_secret`). |
+| `harvester_vm_snapshot`   | Create/list/restore/delete VM snapshots. Restore accepts `halt_after_restore=true` to leave the VM powered off. |
+| `harvester_vm_backup`     | Create/list/restore VM backups (Backup Target). Restore accepts `halt_after_restore=true`. |
 | `harvester_image_list`    | List VM images (VirtualMachineImage)                              |
 | `harvester_image_create`  | Create VM image from URL (when not read-only)                      |
 | `harvester_volume_list`   | List PVCs (Longhorn-backed volumes)                               |
@@ -210,13 +210,14 @@ Then reference the binary directly in your MCP config:
 | `harvester_subnet_delete`  | Delete Subnet (when destructive allowed)                           |
 | `harvester_host_list`     | List nodes (Harvester hosts)                                      |
 | `harvester_host_action`  | Enable/disable maintenance mode on a host (cordon/uncordon)        |
-| `harvester_settings`     | List or get Harvester cluster settings (backup-target, etc.)      |
+| `harvester_settings`     | List or get Harvester settings. With `value`, or `pss_enabled` / `pss_whitelisted` / `pss_privileged` / `pss_restricted`, updates a setting (including `cluster-pod-security-standard`) when not read-only. |
 | `harvester_addon_list`    | List Harvester addons (enabled/disabled state)                     |
 | `harvester_addon_switch`  | Enable or disable an addon (when not read-only)                   |
 | `harvester_vpc_list`      | List KubeOVN VPCs (requires kubeovn-operator addon)               |
 | `harvester_vpc_create`    | Create a KubeOVN VPC (when not read-only)                        |
 | `harvester_vpc_update`    | Update a KubeOVN VPC namespaces (when not read-only)               |
 | `harvester_vpc_delete`    | Delete a KubeOVN VPC (when destructive allowed)                   |
+| `harvester_vpc_nat_gateway` | Create/list/delete a Kube-OVN VPC NAT gateway, EIP, DNAT rule, or SNAT rule (`kind`: gateway, eip, dnat, snat) |
 
 List tools accept `cluster` (required), `namespace`, `format` (json|table), `limit` (default 100), `continue` (pagination token for next page). Write tools require `read_only: false`.
 

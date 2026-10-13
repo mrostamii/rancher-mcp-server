@@ -70,10 +70,10 @@ func (t *Toolset) networkCreateHandler(ctx context.Context, req mcp.CallToolRequ
 		// KubeOVN overlay: provider = name.namespace.ovn
 		provider := fmt.Sprintf("%s.%s.ovn", name, namespace)
 		cfg := map[string]interface{}{
-			"cniVersion":     "0.3.0",
-			"type":           "kube-ovn",
-			"server_socket":  "/run/openvswitch/kube-ovn-daemon.sock",
-			"provider":       provider,
+			"cniVersion":    "0.3.0",
+			"type":          "kube-ovn",
+			"server_socket": "/run/openvswitch/kube-ovn-daemon.sock",
+			"provider":      provider,
 		}
 		b, _ := json.Marshal(cfg)
 		config = string(b)

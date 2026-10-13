@@ -35,6 +35,7 @@ func (t *Toolset) Register(s *server.MCPServer) {
 	s.AddTool(t.addonListTool(), t.addonListHandler)
 	s.AddTool(t.vpcListTool(), t.vpcListHandler)
 	s.AddTool(t.subnetListTool(), t.subnetListHandler)
+	s.AddTool(t.vpcNatGatewayTool(), t.vpcNatGatewayHandler)
 	if t.policy.CanWrite() {
 		s.AddTool(t.vmActionTool(), t.vmActionHandler)
 		s.AddTool(t.vmCreateTool(), t.vmCreateHandler)
