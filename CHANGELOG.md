@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/mrostamii/rancher-mcp-server/compare/v0.9.1...v0.10.0) (2026-10-13)
+
+
+### Features
+
+* **harvester:** add Harvester 1.9 guest and network operations ([ffde99d](https://github.com/mrostamii/rancher-mcp-server/commit/ffde99d1d960f7b401c7e768a4117f26c9a7ce1d))
+
 ## [0.9.1](https://github.com/mrostamii/rancher-mcp-server/compare/v0.9.0...v0.9.1) (2026-04-27)
 
 
